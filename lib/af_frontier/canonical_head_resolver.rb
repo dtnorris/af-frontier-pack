@@ -7,6 +7,9 @@ require "digest"
 module AfFrontier
   class CanonicalHeadResolver
     PROJECT_STATE_SCHEMA = "adventurefinder-project-state/v0.2"
+    PROJECT_STATE_ROLES = %w[catalog_head matcher_authorized_baseline production_dependency_floor].freeze
+    PROJECT_STATE_ROLE_FIELDS = %w[version filename sha256 bytes].freeze
+    PROJECT_STATE_VERSION_RE = /\A\d+(?:\.\d+)*\z/
     AMC_FILENAME_RE = /\A5e_Adventure_Master_Catalog_(?<version>\d+(?:\.\d+)*)\.xlsx\z/
 
     Resolution = Struct.new(
@@ -58,6 +61,7 @@ module AfFrontier
 
     def resolve_from_manifest(manifest, role, expected_schema)
       data = YAML.safe_load(manifest.read, permitted_classes: [], aliases: false) || {}
+      validate_project_state_manifest!(manifest, data, expected_schema)
       unless data.is_a?(Hash) && data["schema_version"] == expected_schema
         actual = data.is_a?(Hash) ? data["schema_version"] : nil
         raise ResolutionError,
@@ -98,6 +102,73 @@ module AfFrontier
       )
     rescue Psych::Exception => e
       raise ResolutionError, "Could not parse state manifest #{manifest}: #{e.message}"
+    end
+
+    def validate_project_state_manifest!(manifest, data, expected_schema)
+      unless data.is_a?(Hash)
+        raise ResolutionError, "Project state #{manifest} must contain a mapping"
+      end
+
+      allowed_keys = ["schema_version", *PROJECT_STATE_ROLES]
+      unknown = data.keys - allowed_keys
+      raise ResolutionError, "Unknown project-state keys: #{unknown.join(', ')}" unless unknown.empty?
+
+      unless data["schema_version"] == expected_schema
+        raise ResolutionError,
+              "Unsupported project-state schema #{data['schema_version'].inspect} in #{manifest}; expected #{expected_schema.inspect}"
+      end
+
+      PROJECT_STATE_ROLES.each do |project_role|
+        entry = data[project_role]
+        unless entry.is_a?(Hash)
+          raise ResolutionError, "Project state #{manifest} is missing role #{project_role.inspect}"
+        end
+        validate_project_state_role!(manifest, project_role, entry)
+      end
+
+      head = data.fetch("catalog_head").fetch("version").to_s
+      %w[matcher_authorized_baseline production_dependency_floor].each do |project_role|
+        version = data.fetch(project_role).fetch("version").to_s
+        next unless compare_project_state_versions(version, head).positive?
+
+        raise ResolutionError, "#{project_role} #{version} cannot be newer than catalog_head #{head}"
+      end
+    end
+
+    def validate_project_state_role!(manifest, role, entry)
+      missing = PROJECT_STATE_ROLE_FIELDS.reject { |field| entry.key?(field) }
+      raise ResolutionError, "#{role} missing fields: #{missing.join(', ')}" unless missing.empty?
+
+      unknown = entry.keys - PROJECT_STATE_ROLE_FIELDS
+      raise ResolutionError, "#{role} has unknown fields: #{unknown.join(', ')}" unless unknown.empty?
+
+      version = entry.fetch("version").to_s
+      raise ResolutionError, "#{role} has invalid version #{version.inspect}" unless PROJECT_STATE_VERSION_RE.match?(version)
+
+      filename = entry.fetch("filename").to_s
+      sha = entry.fetch("sha256").to_s.downcase
+      bytes = entry.fetch("bytes")
+      validate_entry!(role, version, filename, sha, bytes)
+
+      path = manifest.dirname.join(filename)
+      raise ResolutionError, "#{role} in #{manifest} points to missing AMC: #{path}" unless path.file?
+
+      actual_bytes = path.size
+      unless actual_bytes == bytes
+        raise ResolutionError, "#{role} catalog byte-size mismatch: expected #{bytes}, got #{actual_bytes}: #{path}"
+      end
+
+      actual_sha = Digest::SHA256.file(path).hexdigest
+      unless actual_sha == sha
+        raise ResolutionError, "#{role} catalog SHA-256 mismatch: expected #{sha}, got #{actual_sha}: #{path}"
+      end
+    end
+
+    def compare_project_state_versions(left, right)
+      a = left.to_s.split(".").map!(&:to_i)
+      b = right.to_s.split(".").map!(&:to_i)
+      length = [a.length, b.length].max
+      (a + [0] * (length - a.length)) <=> (b + [0] * (length - b.length))
     end
 
     def validate_entry!(role, version, filename, sha, bytes)

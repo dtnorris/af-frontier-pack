@@ -28,6 +28,16 @@ class CanonicalHeadResolverTest < Minitest::Test
           filename: #{File.basename(catalog)}
           sha256: #{sha}
           bytes: #{File.size(catalog)}
+        matcher_authorized_baseline:
+          version: "9.9.9"
+          filename: #{File.basename(catalog)}
+          sha256: #{sha}
+          bytes: #{File.size(catalog)}
+        production_dependency_floor:
+          version: "9.9.9"
+          filename: #{File.basename(catalog)}
+          sha256: #{sha}
+          bytes: #{File.size(catalog)}
       YAML
 
       resolver = AfFrontier::CanonicalHeadResolver.new(project_root: dir)
@@ -44,12 +54,23 @@ class CanonicalHeadResolverTest < Minitest::Test
       catalog = File.join(dir, File.basename(TestPaths::AMC))
       FileUtils.cp(TestPaths::AMC, catalog)
       state = File.join(dir, "PROJECT_STATE.yml")
+      sha = Digest::SHA256.file(catalog).hexdigest
       File.write(state, <<~YAML)
         schema_version: adventurefinder-project-state/v0.2
         catalog_head:
           version: "9.9.9"
           filename: #{File.basename(catalog)}
           sha256: "#{"0" * 64}"
+          bytes: #{File.size(catalog)}
+        matcher_authorized_baseline:
+          version: "9.9.9"
+          filename: #{File.basename(catalog)}
+          sha256: #{sha}
+          bytes: #{File.size(catalog)}
+        production_dependency_floor:
+          version: "9.9.9"
+          filename: #{File.basename(catalog)}
+          sha256: #{sha}
           bytes: #{File.size(catalog)}
       YAML
 

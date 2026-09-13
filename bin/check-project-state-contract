@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "optparse"
+require "yaml"
+require_relative "../lib/af_frontier/errors"
+require_relative "../lib/af_frontier/paths"
+require_relative "../lib/af_frontier/canonical_head_resolver"
+
+options = {}
+OptionParser.new do |parser|
+  parser.banner = "Usage: bin/check-project-state-contract --suite PATH"
+  parser.on("--suite PATH", "Canonical project-state conformance suite") { |v| options[:suite] = v }
+end.parse!
+
+abort "missing --suite PATH" if options[:suite].to_s.strip.empty?
+suite = File.expand_path(options[:suite])
+abort "suite not found: #{suite}" unless Dir.exist?(suite)
+
+oracle = YAML.safe_load_file(File.join(suite, "cases.yml"), aliases: false) || {}
+expected_suite = "adventurefinder-project-state-conformance/v0.1"
+expected_schema = AfFrontier::CanonicalHeadResolver::PROJECT_STATE_SCHEMA
+abort "unsupported conformance suite #{oracle['suite_schema'].inspect}" unless oracle["suite_schema"] == expected_suite
+abort "suite targets #{oracle['project_state_schema'].inspect}; consumer supports #{expected_schema}" unless oracle["project_state_schema"] == expected_schema
+
+cases = oracle.fetch("cases")
+failures = []
+
+cases.each do |name, expectation|
+  fixture_root = File.join(suite, "fixtures", name)
+  manifest = File.join(fixture_root, "PROJECT_STATE.yml")
+  expected_valid = expectation.fetch("valid")
+  error = nil
+
+  begin
+    AfFrontier::CanonicalHeadResolver.new(project_root: fixture_root).resolve(state_path: manifest)
+    actual_valid = true
+  rescue AfFrontier::ResolutionError, AfFrontier::ConfigurationError => e
+    actual_valid = false
+    error = e
+  end
+
+  next if actual_valid == expected_valid
+  failures << [name, expected_valid, actual_valid, error&.message]
+end
+
+if failures.empty?
+  puts "af-frontier-pack: PASS #{cases.length}/#{cases.length}"
+  exit 0
+end
+
+puts "af-frontier-pack: FAIL #{cases.length - failures.length}/#{cases.length}"
+failures.each do |name, expected_valid, actual_valid, message|
+  puts "  #{name}: expected #{expected_valid ? 'ACCEPT' : 'REJECT'}, got #{actual_valid ? 'ACCEPT' : 'REJECT'}"
+  puts "    #{message}" if message
+end
+exit 1
