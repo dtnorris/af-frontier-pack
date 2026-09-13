@@ -1,19 +1,10 @@
+# AdventureFinder project-state authority consumed by af-frontier-pack.
 # Paths are resolved relative to AF_PROJECT_ROOT unless absolute.
-# The resolver accepts either:
 #
-# catalog_head:
-#   path: af-xlsx-data-sources/5e_Adventure_Master_Catalog_5.7.2.xlsx
-#
-# or:
-#
-# roles:
-#   catalog_head:
-#     path: af-xlsx-data-sources/5e_Adventure_Master_Catalog_5.7.2.xlsx
-#
-# This file lists candidate *state manifests*; it does not itself declare a head.
+# The canonical contract lives in af-xlsx-data-sources/PROJECT_STATE.yml and
+# uses schema adventurefinder-project-state/v0.1. af-frontier verifies the
+# catalog_head version, filename, byte size, and SHA-256 before building.
 state_manifests:
-  - af-data-pipeline/config/project_state.yml
-  - af-data-pipeline/PROJECT_STATE.yml
   - af-xlsx-data-sources/PROJECT_STATE.yml
-  - af-xlsx-data-sources/CURRENT_AMC.yml
 role: catalog_head
+schema_version: adventurefinder-project-state/v0.1

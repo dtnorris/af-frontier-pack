@@ -39,7 +39,7 @@ module AfFrontier
       opts = {
         output: Paths.output_root.to_s,
         corpus_root: Paths.project_root.join("md-for-llm-book-content").to_s,
-        source_registry: default_source_registry
+        source_registry: nil
       }
       parser = OptionParser.new do |o|
         o.banner = "Usage: bin/af-frontier build [options]"
@@ -55,11 +55,14 @@ module AfFrontier
       resolution = CanonicalHeadResolver.new.resolve(explicit_amc: opts[:amc], state_path: opts[:state])
       @out.puts(opts[:amc] ? "Using explicit AMC:" : "No --amc supplied. Resolved canonical catalog head:")
       @out.puts("  #{resolution.path}")
+      @out.puts("  version: #{resolution.version}") if resolution.version
+      @out.puts("  sha256: #{resolution.sha256}") if resolution.sha256
       @out.puts("Authority: #{resolution.source}")
       @out.puts
 
-      unless opts[:source_registry] && File.file?(opts[:source_registry])
-        raise ConfigurationError, "Source registry not found. Supply --source-registry PATH (default tried: #{opts[:source_registry] || 'none'})"
+      opts[:source_registry] ||= File.join(opts[:corpus_root], "source_registry.yml")
+      unless File.file?(opts[:source_registry])
+        raise ConfigurationError, "Source registry not found. Supply --source-registry PATH (default tried: #{opts[:source_registry]})"
       end
 
       registry = SourceRegistry.new(path: opts[:source_registry], corpus_root: opts[:corpus_root])
@@ -70,7 +73,10 @@ module AfFrontier
         output_root: opts[:output]
       ).build
 
-      @out.puts("Built #{manifest.dig('counts', 'adventures')} adventures across #{manifest.dig('counts', 'sources')} resolved sources.")
+      @out.puts(
+        "Built #{manifest.dig('counts', 'adventures')} adventures across #{manifest.dig('counts', 'sources')} sources " \
+        "(#{manifest.dig('counts', 'source_resolved')} source-resolved; #{manifest.dig('counts', 'source_unresolved')} unresolved)."
+      )
       @out.puts("Frontier pack written:")
       @out.puts("  #{Pathname.new(opts[:output]).expand_path}")
       0
@@ -192,12 +198,5 @@ module AfFrontier
       @err.puts("Frontier pack: #{pack.authority_label}")
     end
 
-    def default_source_registry
-      candidates = [
-        Paths.project_root.join("af-cli-scoring-utility/config/source_mappings.yml"),
-        Paths.project_root.join("md-for-llm-book-content/config/source_registry.yml")
-      ]
-      candidates.find(&:file?)&.to_s || candidates.first.to_s
-    end
   end
 end

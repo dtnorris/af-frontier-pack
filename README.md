@@ -13,7 +13,7 @@ canonical AdventureFinder artifacts
         +-- canonical source registry / mappings
         +-- private canonical Markdown corpus
         +-- AFAO/version metadata
-        +-- project-state authority where available
+        +-- project-state authority
         |
         v
    af-frontier-pack
@@ -55,9 +55,9 @@ Resolution order in v0.1:
 1. `--amc PATH`
 2. `AF_FRONTIER_AMC`
 3. `--state PATH`, resolving role `catalog_head`
-4. configured/default project-state manifest candidates containing an explicit `catalog_head` role
+4. `/Users/davidnorris/code/af-xlsx-data-sources/PROJECT_STATE.yml` (relative to `AF_PROJECT_ROOT`)
 
-If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
+The production project-state contract is `adventurefinder-project-state/v0.1`. For a resolved `catalog_head`, `af-frontier` verifies the declared version/filename, byte size, and SHA-256 before building. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
 
 ### Project root
 
@@ -89,17 +89,23 @@ Every file-producing `bundle` command ends by printing its **absolute output pat
 
 ## Build
 
-Typical explicit build:
+Normal production build:
+
+```bash
+bin/af-frontier build
+```
+
+By default this resolves `catalog_head` from `af-xlsx-data-sources/PROJECT_STATE.yml`, uses `/Users/davidnorris/code/md-for-llm-book-content` as the corpus root, and reads `source_registry.yml` from that corpus root. All three remain explicitly overridable:
 
 ```bash
 bin/af-frontier build \
   --amc /Users/davidnorris/code/af-xlsx-data-sources/5e_Adventure_Master_Catalog_5.7.2.xlsx \
-  --source-registry /Users/davidnorris/code/af-cli-scoring-utility/config/source_mappings.yml \
+  --source-registry /Users/davidnorris/code/md-for-llm-book-content/source_registry.yml \
   --corpus-root /Users/davidnorris/code/md-for-llm-book-content \
   --afao /Users/davidnorris/code/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.md
 ```
 
-The starter repository intentionally treats the exact live source-registry schema and the eventual project-state manifest location as integration seams. It supports a conservative family of common YAML mapping shapes and fails closed when a source cannot be resolved unambiguously.
+The production source registry contract is `adventurefinder-source-registry/v0.1`. Explicit mappings may point to one Markdown file or to page-bounded segments. `page_marker_offset`, when present, must be an explicitly signed integer string such as `"+3"` or `"-4"`. If a source has no explicit registry entry, the same deterministic normalized-filename fallback used by `af-cli-scoring-utility` is available and is surfaced with a warning; ambiguity fails closed.
 
 ## Deterministic filtering
 
@@ -137,7 +143,7 @@ bin/af-frontier select \
 bin/af-frontier source ADV-0287
 ```
 
-returns the deterministic locator. `--emit` extracts source text only if the source registry provides an explicit page-marker contract (`page_basis` and optional `page_offset`). If that information is absent, v0.1 refuses to guess whether AMC pages correspond to PDF-page or printed-page markers.
+returns the deterministic locator. `--emit` follows the production AdventureFinder source contract: it uses `Printed Page` markers when a source contains them, otherwise falls back to `PDF Page` / `PAGE:` markers, and applies the registry's `page_marker_offset` before requiring exact start/end markers. Missing or ambiguous boundaries fail closed; there is no full-source fallback in `af-frontier-pack`.
 
 ## Bundle
 
@@ -184,4 +190,4 @@ bundle install
 bundle exec rake
 ```
 
-The test fixture includes a tiny `.xlsx`, source registry, and Markdown corpus so the core v0.1 flow can be exercised without any private AdventureFinder repository.
+The test fixture includes a tiny `.xlsx`, production-schema source registry, and safe Markdown corpus so the core v0.1 flow can be exercised without copying any private AdventureFinder source content.

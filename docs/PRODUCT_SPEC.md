@@ -9,10 +9,10 @@ Deterministically package and expose AdventureFinder's canonical knowledge so a 
 ## Inputs
 
 - Exact AMC workbook, or authoritative `catalog_head` resolution.
-- Source identity / locator registry.
+- `md-for-llm-book-content/source_registry.yml` (`adventurefinder-source-registry/v0.1`) by default, or an explicit compatible registry.
 - Private canonical Markdown corpus root.
 - AFAO specification/version metadata when available.
-- Project-state manifest when available.
+- `af-xlsx-data-sources/PROJECT_STATE.yml` (`adventurefinder-project-state/v0.1`) for default `catalog_head` resolution.
 
 ## Outputs
 
@@ -37,7 +37,13 @@ output/frontier-pack/
 
 ## AMC resolution
 
-Explicit `--amc` wins. Otherwise resolve a named authoritative `catalog_head` and announce the exact selection. Never select a catalog because its filename appears numerically largest.
+Explicit `--amc` wins. Otherwise resolve `catalog_head` from the authoritative project-state manifest, verify its version/filename/byte-size/SHA-256 declaration, and announce the exact selection. Never select a catalog because its filename appears numerically largest.
+
+## Source resolution
+
+Mirror AdventureFinder's production source contract: exact registry mappings first (including segmented mappings and signed `page_marker_offset`), then deterministic normalized-filename fallback when no explicit mapping exists. For extraction, prefer `Printed Page` markers when present; otherwise use `PDF Page` / `PAGE:` markers. Exact start/end markers are required.
+
+Canonical parentage remains `null` in v0.1 because current parent edges are preserved in ingestion provenance but are not yet exposed as one consolidated current-state catalog authority.
 
 ## Critical null rule
 
