@@ -1,0 +1,16 @@
+# frozen_string_literal: true
+
+require_relative "af_frontier/version"
+require_relative "af_frontier/errors"
+require_relative "af_frontier/paths"
+require_relative "af_frontier/jsonl"
+require_relative "af_frontier/canonical_head_resolver"
+require_relative "af_frontier/xlsx_catalog_reader"
+require_relative "af_frontier/source_registry"
+require_relative "af_frontier/source_resolver"
+require_relative "af_frontier/pack"
+require_relative "af_frontier/pack_builder"
+require_relative "af_frontier/doctor"
+require_relative "af_frontier/selector"
+require_relative "af_frontier/bundler"
+require_relative "af_frontier/cli"
