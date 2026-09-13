@@ -7,7 +7,7 @@
 state_manifests:
   - af-xlsx-data-sources/PROJECT_STATE.yml
 role: catalog_head
-schema_version: adventurefinder-project-state/v0.1
+schema_version: adventurefinder-project-state/v0.2
 
 afao:
   path: md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md

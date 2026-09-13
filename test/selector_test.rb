@@ -6,7 +6,12 @@ class SelectorTest < Minitest::Test
   def test_and_filters_and_does_not_match_null
     Dir.mktmpdir do |dir|
       registry = AfFrontier::SourceRegistry.new(path: TestPaths::REGISTRY, corpus_root: TestPaths::CORPUS)
-      AfFrontier::PackBuilder.new(amc_path: TestPaths::AMC, source_registry: registry, output_root: dir).build
+      AfFrontier::PackBuilder.new(
+        amc_path: TestPaths::AMC,
+        source_registry: registry,
+        afao_path: TestPaths.write_afao(dir),
+        output_root: dir
+      ).build
       pack = AfFrontier::Pack.new(root: dir)
       rows = AfFrontier::Selector.new(pack: pack).select(["GMPB<=2", "CPA>=4"])
       assert_equal ["ADV-0001"], rows.map { |r| r["adventure_id"] }

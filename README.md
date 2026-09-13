@@ -57,7 +57,7 @@ Resolution order in v0.1:
 3. `--state PATH`, resolving role `catalog_head`
 4. `/Users/davidnorris/code/af-xlsx-data-sources/PROJECT_STATE.yml` (relative to `AF_PROJECT_ROOT`)
 
-The production project-state contract is `adventurefinder-project-state/v0.1`. For a resolved `catalog_head`, `af-frontier` verifies the declared version/filename, byte size, and SHA-256 before building. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
+The production project-state contract is `adventurefinder-project-state/v0.2`. For a resolved `catalog_head`, `af-frontier` verifies the declared version/filename, byte size, and SHA-256 before building. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
 
 ### AFAO resolution
 

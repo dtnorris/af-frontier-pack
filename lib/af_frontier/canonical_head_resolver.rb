@@ -6,7 +6,7 @@ require "digest"
 
 module AfFrontier
   class CanonicalHeadResolver
-    PROJECT_STATE_SCHEMA = "adventurefinder-project-state/v0.1"
+    PROJECT_STATE_SCHEMA = "adventurefinder-project-state/v0.2"
     AMC_FILENAME_RE = /\A5e_Adventure_Master_Catalog_(?<version>\d+(?:\.\d+)*)\.xlsx\z/
 
     Resolution = Struct.new(

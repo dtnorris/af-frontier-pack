@@ -7,7 +7,12 @@ class BundlerTest < Minitest::Test
     Dir.mktmpdir do |dir|
       registry = AfFrontier::SourceRegistry.new(path: TestPaths::REGISTRY, corpus_root: TestPaths::CORPUS)
       pack_root = File.join(dir, "pack")
-      AfFrontier::PackBuilder.new(amc_path: TestPaths::AMC, source_registry: registry, output_root: pack_root).build
+      AfFrontier::PackBuilder.new(
+        amc_path: TestPaths::AMC,
+        source_registry: registry,
+        afao_path: TestPaths.write_afao(dir),
+        output_root: pack_root
+      ).build
       pack = AfFrontier::Pack.new(root: pack_root)
       dest = File.join(dir, "bundle.md")
       path = AfFrontier::Bundler.new(pack: pack).write(ids: ["ADV-0001", "ADV-0002"], path: dest)

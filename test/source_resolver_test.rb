@@ -6,7 +6,12 @@ class SourceResolverTest < Minitest::Test
   def test_prefers_printed_markers_when_present
     Dir.mktmpdir do |dir|
       registry = AfFrontier::SourceRegistry.new(path: TestPaths::REGISTRY, corpus_root: TestPaths::CORPUS)
-      AfFrontier::PackBuilder.new(amc_path: TestPaths::AMC, source_registry: registry, output_root: dir).build
+      AfFrontier::PackBuilder.new(
+        amc_path: TestPaths::AMC,
+        source_registry: registry,
+        afao_path: TestPaths.write_afao(dir),
+        output_root: dir
+      ).build
       pack = AfFrontier::Pack.new(root: dir)
       text = AfFrontier::SourceResolver.new(pack: pack).emit("ADV-0001")
       assert_includes text, "<!-- Printed Page 10 -->"
@@ -19,7 +24,12 @@ class SourceResolverTest < Minitest::Test
   def test_applies_registry_offset_to_pdf_fallback_markers
     Dir.mktmpdir do |dir|
       registry = AfFrontier::SourceRegistry.new(path: TestPaths::REGISTRY, corpus_root: TestPaths::CORPUS)
-      AfFrontier::PackBuilder.new(amc_path: TestPaths::AMC, source_registry: registry, output_root: dir).build
+      AfFrontier::PackBuilder.new(
+        amc_path: TestPaths::AMC,
+        source_registry: registry,
+        afao_path: TestPaths.write_afao(dir),
+        output_root: dir
+      ).build
       pack = AfFrontier::Pack.new(root: dir)
       record = pack.fetch("ADV-0002")
       assert_equal 3, record.dig("source_locator", "page_marker_offset")

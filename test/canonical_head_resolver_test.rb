@@ -22,7 +22,7 @@ class CanonicalHeadResolverTest < Minitest::Test
       state = File.join(xlsx_root, "PROJECT_STATE.yml")
       sha = Digest::SHA256.file(catalog).hexdigest
       File.write(state, <<~YAML)
-        schema_version: adventurefinder-project-state/v0.1
+        schema_version: adventurefinder-project-state/v0.2
         catalog_head:
           version: "9.9.9"
           filename: #{File.basename(catalog)}
@@ -45,7 +45,7 @@ class CanonicalHeadResolverTest < Minitest::Test
       FileUtils.cp(TestPaths::AMC, catalog)
       state = File.join(dir, "PROJECT_STATE.yml")
       File.write(state, <<~YAML)
-        schema_version: adventurefinder-project-state/v0.1
+        schema_version: adventurefinder-project-state/v0.2
         catalog_head:
           version: "9.9.9"
           filename: #{File.basename(catalog)}

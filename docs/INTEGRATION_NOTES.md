@@ -15,7 +15,7 @@ relative to `AF_PROJECT_ROOT`.
 Its schema is:
 
 ```text
-adventurefinder-project-state/v0.1
+adventurefinder-project-state/v0.2
 ```
 
 and `catalog_head` contains:
