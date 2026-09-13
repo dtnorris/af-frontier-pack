@@ -60,6 +60,14 @@ module AfFrontier
       @out.puts("Authority: #{resolution.source}")
       @out.puts
 
+      afao_resolution = AnalysisOntologyResolver.new.resolve(explicit_afao: opts[:afao])
+      @out.puts(opts[:afao] ? "Using explicit AFAO:" : "Resolved AFAO authority:")
+      @out.puts("  #{afao_resolution.path}")
+      @out.puts("  version: #{afao_resolution.version}")
+      @out.puts("  sha256: #{afao_resolution.sha256}")
+      @out.puts("Authority: #{afao_resolution.source}")
+      @out.puts
+
       opts[:source_registry] ||= File.join(opts[:corpus_root], "source_registry.yml")
       unless File.file?(opts[:source_registry])
         raise ConfigurationError, "Source registry not found. Supply --source-registry PATH (default tried: #{opts[:source_registry]})"
@@ -69,7 +77,7 @@ module AfFrontier
       manifest = PackBuilder.new(
         amc_path: resolution.path,
         source_registry: registry,
-        afao_path: opts[:afao],
+        afao_path: afao_resolution.path,
         output_root: opts[:output]
       ).build
 

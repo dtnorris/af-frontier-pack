@@ -12,7 +12,7 @@ canonical AdventureFinder artifacts
         +-- AMC workbook
         +-- canonical source registry / mappings
         +-- private canonical Markdown corpus
-        +-- AFAO/version metadata
+        +-- pinned current AFAO ontology
         +-- project-state authority
         |
         v
@@ -59,6 +59,26 @@ Resolution order in v0.1:
 
 The production project-state contract is `adventurefinder-project-state/v0.1`. For a resolved `catalog_head`, `af-frontier` verifies the declared version/filename, byte size, and SHA-256 before building. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
 
+### AFAO resolution
+
+AFAO is a required build authority because `adventures.jsonl` exposes fields whose meanings come from the ontology. A normal build resolves the exact configured production contract rather than leaving `inputs.afao` null or scanning for the numerically newest ontology filename.
+
+Resolution order in v0.1:
+
+1. `--afao PATH`
+2. `config/authority.yml` → `afao`
+
+The current configured contract is:
+
+```text
+md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
+version: 1.6.1
+```
+
+The configured path is relative to `AF_PROJECT_ROOT` unless absolute. `af-frontier` verifies that the configured filename matches the configured version and that the file's `## Version` declaration matches as well. Missing or mismatched AFAO authority fails closed.
+
+`manifest.json` records the resolved AFAO filename, absolute path, declared version, SHA-256, and byte size.
+
 ### Project root
 
 The default AdventureFinder checkout root is:
@@ -95,14 +115,14 @@ Normal production build:
 bin/af-frontier build
 ```
 
-By default this resolves `catalog_head` from `af-xlsx-data-sources/PROJECT_STATE.yml`, uses `/Users/davidnorris/code/md-for-llm-book-content` as the corpus root, and reads `source_registry.yml` from that corpus root. All three remain explicitly overridable:
+By default this resolves `catalog_head` from `af-xlsx-data-sources/PROJECT_STATE.yml`, resolves the pinned AFAO contract from `config/authority.yml`, uses `/Users/davidnorris/code/md-for-llm-book-content` as the corpus root, and reads `source_registry.yml` from that corpus root. These inputs remain explicitly overridable:
 
 ```bash
 bin/af-frontier build \
   --amc /Users/davidnorris/code/af-xlsx-data-sources/5e_Adventure_Master_Catalog_5.7.2.xlsx \
   --source-registry /Users/davidnorris/code/md-for-llm-book-content/source_registry.yml \
   --corpus-root /Users/davidnorris/code/md-for-llm-book-content \
-  --afao /Users/davidnorris/code/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.md
+  --afao /Users/davidnorris/code/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
 ```
 
 The production source registry contract is `adventurefinder-source-registry/v0.1`. Explicit mappings may point to one Markdown file or to page-bounded segments. `page_marker_offset`, when present, must be an explicitly signed integer string such as `"+3"` or `"-4"`. If a source has no explicit registry entry, the same deterministic normalized-filename fallback used by `af-cli-scoring-utility` is available and is surfaced with a warning; ambiguity fails closed.
@@ -169,6 +189,7 @@ Bundles are written beneath `output/frontier-pack/bundles/`. Source-bearing bund
 - Zero canonical truth ownership.
 - Same authoritative inputs + same generator version => same semantic pack.
 - Explicit artifact selection or authoritative `catalog_head` resolution only.
+- Every pack records a concrete AFAO authority; `inputs.afao` is never `null`.
 - Never infer canonicality from filename version ordering.
 - Missing assessment values remain `null`; missing never means low.
 - No LLM calls for build/doctor/show/select/source/bundle.

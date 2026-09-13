@@ -1,10 +1,14 @@
-# AdventureFinder project-state authority consumed by af-frontier-pack.
+# AdventureFinder authorities consumed by af-frontier-pack.
 # Paths are resolved relative to AF_PROJECT_ROOT unless absolute.
 #
-# The canonical contract lives in af-xlsx-data-sources/PROJECT_STATE.yml and
-# uses schema adventurefinder-project-state/v0.1. af-frontier verifies the
-# catalog_head version, filename, byte size, and SHA-256 before building.
+# The catalog-head contract lives in af-xlsx-data-sources/PROJECT_STATE.yml.
+# The AFAO contract mirrors the exact ontology consumed by the production scorer;
+# af-frontier never infers ontology authority from filename version ordering.
 state_manifests:
   - af-xlsx-data-sources/PROJECT_STATE.yml
 role: catalog_head
 schema_version: adventurefinder-project-state/v0.1
+
+afao:
+  path: md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
+  version: "1.6.1"

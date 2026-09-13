@@ -5,8 +5,15 @@ require_relative "test_helper"
 class PackBuilderTest < Minitest::Test
   def test_builds_deterministic_pack_with_nulls_and_catalog_source_identities
     Dir.mktmpdir do |dir|
+      afao = File.join(dir, "AdventureFinder_Analysis_Ontology_v1.6.1.md")
+      File.write(afao, "# AdventureFinder Analysis Ontology\n\n## Version 1.6.1\n")
       registry = AfFrontier::SourceRegistry.new(path: TestPaths::REGISTRY, corpus_root: TestPaths::CORPUS)
-      manifest = AfFrontier::PackBuilder.new(amc_path: TestPaths::AMC, source_registry: registry, output_root: dir).build
+      manifest = AfFrontier::PackBuilder.new(
+        amc_path: TestPaths::AMC,
+        source_registry: registry,
+        afao_path: afao,
+        output_root: dir
+      ).build
       pack = AfFrontier::Pack.new(root: dir)
 
       assert_equal 3, manifest.dig("counts", "adventures")
@@ -14,6 +21,9 @@ class PackBuilderTest < Minitest::Test
       assert_equal 3, manifest.dig("counts", "source_resolved")
       assert_equal 0, manifest.dig("counts", "source_unresolved")
       assert_equal "9.9.9", manifest.dig("inputs", "amc", "version")
+      assert_equal "1.6.1", manifest.dig("inputs", "afao", "version")
+      assert_equal Digest::SHA256.file(afao).hexdigest, manifest.dig("inputs", "afao", "sha256")
+      assert_equal File.realpath(afao), manifest.dig("inputs", "afao", "path")
       assert_equal AfFrontier::SourceRegistry::REGISTRY_SCHEMA_VERSION,
                    manifest.dig("inputs", "source_registry", "schema_version")
       assert_nil pack.fetch("ADV-0002").dig("assessments", "FW")

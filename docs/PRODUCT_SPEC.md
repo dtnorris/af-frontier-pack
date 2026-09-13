@@ -11,7 +11,7 @@ Deterministically package and expose AdventureFinder's canonical knowledge so a 
 - Exact AMC workbook, or authoritative `catalog_head` resolution.
 - `md-for-llm-book-content/source_registry.yml` (`adventurefinder-source-registry/v0.1`) by default, or an explicit compatible registry.
 - Private canonical Markdown corpus root.
-- AFAO specification/version metadata when available.
+- Exact current AFAO authority, resolved deterministically and required for every build.
 - `af-xlsx-data-sources/PROJECT_STATE.yml` (`adventurefinder-project-state/v0.1`) for default `catalog_head` resolution.
 
 ## Outputs
@@ -38,6 +38,14 @@ output/frontier-pack/
 ## AMC resolution
 
 Explicit `--amc` wins. Otherwise resolve `catalog_head` from the authoritative project-state manifest, verify its version/filename/byte-size/SHA-256 declaration, and announce the exact selection. Never select a catalog because its filename appears numerically largest.
+
+## AFAO resolution
+
+Explicit `--afao` wins. Otherwise resolve the exact `afao` contract from `config/authority.yml`, relative to `AF_PROJECT_ROOT` unless absolute. The current production contract is `md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md`, version `1.6.1`, matching the production scorer.
+
+The resolver verifies configured filename/version consistency and the file's `## Version` declaration. Missing or mismatched authority fails closed. Every generated manifest records AFAO filename, path, version, SHA-256, and byte size; `inputs.afao` is not optional.
+
+AFAO authority is explicit and pinned. `af-frontier` must not discover ontology authority by sorting filenames or selecting a numerically newer version.
 
 ## Source resolution
 

@@ -60,7 +60,12 @@ module AfFrontier
       validate_input_hash(errors, manifest, "amc", "AMC")
       validate_input_hash(errors, manifest, "source_registry", "source registry")
       afao = manifest.dig("inputs", "afao")
-      validate_descriptor_hash(errors, afao, "AFAO") if afao
+      if afao
+        errors << "AFAO version missing" if afao["version"].to_s.strip.empty?
+        validate_descriptor_hash(errors, afao, "AFAO")
+      else
+        errors << "AFAO descriptor missing"
+      end
 
       resolved = adventures.count { |adventure| adventure.dig("source_locator", "path") }
       unresolved = adventures.length - resolved

@@ -9,10 +9,10 @@ module AfFrontier
   class PackBuilder
     ACRONYMS = %w[NoS CE EE SIE IE PPSE TC LFS RSMD SO CPA SR DHI FW GMPB GMID PBS GMBS].freeze
 
-    def initialize(amc_path:, source_registry:, afao_path: nil, output_root: Paths.output_root)
+    def initialize(amc_path:, source_registry:, afao_path:, output_root: Paths.output_root)
       @amc_path = Pathname.new(amc_path).expand_path.realpath
       @source_registry = source_registry
-      @afao_path = afao_path && Pathname.new(afao_path).expand_path
+      @afao_path = Pathname.new(afao_path).expand_path
       @output_root = Pathname.new(output_root).expand_path
     end
 
@@ -171,7 +171,7 @@ module AfFrontier
             "sha256" => amc_sha,
             "bytes" => @amc_path.size
           },
-          "afao" => file_descriptor(@afao_path),
+          "afao" => afao_descriptor,
           "source_registry" => {
             "path" => @source_registry.path.to_s,
             "schema_version" => SourceRegistry::REGISTRY_SCHEMA_VERSION,
@@ -188,10 +188,17 @@ module AfFrontier
       }
     end
 
-    def file_descriptor(path)
-      return nil unless path
-      raise ConfigurationError, "AFAO file does not exist: #{path}" unless path.file?
-      { "path" => path.realpath.to_s, "sha256" => Digest::SHA256.file(path).hexdigest }
+    def afao_descriptor
+      raise ConfigurationError, "AFAO file does not exist: #{@afao_path}" unless @afao_path.file?
+
+      realpath = @afao_path.realpath
+      {
+        "filename" => realpath.basename.to_s,
+        "path" => realpath.to_s,
+        "version" => AnalysisOntologyResolver.detect_version(realpath),
+        "sha256" => Digest::SHA256.file(realpath).hexdigest,
+        "bytes" => realpath.size
+      }
     end
 
     def extract_version(filename)
