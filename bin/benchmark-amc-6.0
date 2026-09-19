@@ -23,6 +23,7 @@ EXPECTED_AMC = {
 EXPECTED_ADVENTURES = 879
 EXPECTED_BASELINE_COLUMNS = 13
 EXPECTED_BASELINE_CELLS = EXPECTED_ADVENTURES * EXPECTED_BASELINE_COLUMNS
+LEVEL_UNCERTAIN = "Uncertain".freeze
 
 BASELINE_ACCESSORS = {
   "Number of Sessions" => ->(adventure) { adventure.dig("assessments", "NoS") },
@@ -108,6 +109,10 @@ def sha256(path)
   Digest::SHA256.file(path).hexdigest
 end
 
+def valid_level_value?(value)
+  (value.is_a?(Numeric) && value.positive?) || value == LEVEL_UNCERTAIN
+end
+
 def pack_hashes(root)
   PACK_FILES.to_h { |name| [name, sha256(File.join(root, name))] }
 end
@@ -154,8 +159,17 @@ Dir.mktmpdir("af-frontier-amc-6.0-") do |tmp|
   invalid_level_ids = adventures.filter_map do |adventure|
     start_level = adventure.dig("assessments", "LSLE", "start")
     end_level = adventure.dig("assessments", "LSLE", "end")
-    next if start_level.is_a?(Numeric) && start_level.positive? && end_level.is_a?(Numeric) && end_level.positive?
+    values_valid = valid_level_value?(start_level) && valid_level_value?(end_level)
+    numeric_order_valid =
+      !(start_level.is_a?(Numeric) && end_level.is_a?(Numeric)) || end_level >= start_level
+    next if values_valid && numeric_order_valid
     adventure["adventure_id"]
+  end
+
+  uncertain_level_ids = adventures.filter_map do |adventure|
+    start_level = adventure.dig("assessments", "LSLE", "start")
+    end_level = adventure.dig("assessments", "LSLE", "end")
+    adventure["adventure_id"] if [start_level, end_level].include?(LEVEL_UNCERTAIN)
   end
 
   hashes1 = pack_hashes(run1_root)
@@ -171,7 +185,7 @@ Dir.mktmpdir("af-frontier-amc-6.0-") do |tmp|
       manifest1.dig("inputs", "amc", "bytes") == EXPECTED_AMC.fetch("bytes"),
     "adventure_count_is_879" => adventures.length == EXPECTED_ADVENTURES && manifest1.dig("counts", "adventures") == EXPECTED_ADVENTURES,
     "baseline_13_columns_complete" => missing_cells.zero? && populated_cells == EXPECTED_BASELINE_CELLS,
-    "level_values_positive_numeric" => invalid_level_ids.empty?,
+    "level_values_conform_to_afao_levels_v2_1" => invalid_level_ids.empty?,
     "all_adventures_source_resolved" => source_unresolved == 0 && source_resolved == EXPECTED_ADVENTURES,
     "repeat_builds_byte_identical" => deterministic
   }
@@ -214,7 +228,8 @@ Dir.mktmpdir("af-frontier-amc-6.0-") do |tmp|
       "populated_cells" => populated_cells,
       "missing_cells" => missing_cells,
       "missing_by_column" => missing_by_column,
-      "invalid_level_adventure_ids" => invalid_level_ids
+      "invalid_level_adventure_ids" => invalid_level_ids,
+      "uncertain_level_adventure_ids" => uncertain_level_ids
     },
     "repeatability" => {
       "run_1_seconds" => elapsed1.round(6),
@@ -233,6 +248,7 @@ puts "AMC 6.0 full-corpus benchmark: #{report.dig('benchmark', 'result')}"
 puts "  adventures: #{report.dig('full_corpus', 'adventures')}"
 puts "  baseline cells: #{report.dig('established_13_column_baseline', 'populated_cells')}/#{EXPECTED_BASELINE_CELLS}"
 puts "  source resolved: #{report.dig('full_corpus', 'source_resolved')}/#{EXPECTED_ADVENTURES}"
+puts "  uncertain level adventures: #{report.dig('established_13_column_baseline', 'uncertain_level_adventure_ids').length}"
 puts "  repeat builds byte-identical: #{report.dig('repeatability', 'byte_identical')}"
 puts "  report: #{output_path}"
 

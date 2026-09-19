@@ -54,7 +54,7 @@ and requires all of the following before reporting `PASS`:
 - the pack contains exactly **879** adventures;
 - all **11,427** cells in the established 13-column baseline are populated: Number of Sessions, Level Start, Level End, Combat, Exploration, Social Interaction, Investigation, Structural Openness, Seriousness, Darkness / Horror Intensity, GM Preparation Burden, Player Beginner Suitability, and GM Beginner Suitability;
 - all 879 adventures resolve to canonical source Markdown;
-- Level Start and Level End are positive numeric values; and
+- Level Start and Level End conform to frozen AFAO Levels v2.1: each endpoint is either a positive numeric level or the valid `Uncertain` assessment state, and numeric pairs satisfy `Level End >= Level Start`; and
 - `manifest.json`, `adventures.jsonl`, and `sources.jsonl` are byte-identical across the two builds.
 
 The benchmark writes the durable machine-readable record to:
@@ -65,6 +65,6 @@ docs/benchmarks/amc-6.0-full-corpus.yml
 
 The report records exact AMC/AFAO/source-registry identities, relevant repository
 HEADs and dirty-state observations, full-corpus/source-resolution counts, 13-column
-coverage, build timings, generated-pack SHA-256 values, and every gate result. The
+coverage, contract-valid uncertain-level Adventure IDs, build timings, generated-pack SHA-256 values, and every gate result. The
 report is historical evidence, not moving catalog authority; `PROJECT_STATE.yml`
 continues to own live catalog roles.
