@@ -31,3 +31,40 @@ For each question record:
 - Was the result more useful or more fun than working directly from the raw AMC?
 
 Do not collapse this into one aggregate score in v0.1. The purpose is to identify concrete failure modes.
+
+## AMC 6.0 full-corpus build benchmark
+
+AMC 6.0 is the first whole-Adventure-Catalog benchmark for the established
+13-column production-scoring baseline. This is a deterministic artifact-health
+benchmark, separate from the qualitative usefulness questions above.
+
+Run it from the repository root with the authoritative AdventureFinder sibling
+checkouts under `AF_PROJECT_ROOT` (default `/Users/davidnorris/code`):
+
+```bash
+bin/benchmark-amc-6.0
+```
+
+The harness uses the exact frozen AMC 6.0 artifact identity (295,632 bytes,
+SHA-256 `56e071a90c0e5adef82c19775a0f358cb93df647470eb64153f251475dba0920`)
+and requires all of the following before reporting `PASS`:
+
+- `PROJECT_STATE.yml` identifies AMC 6.0 as `catalog_head` with that exact hash and size;
+- the pack builds twice in isolated temporary output roots and `doctor` passes on both builds;
+- the pack contains exactly **879** adventures;
+- all **11,427** cells in the established 13-column baseline are populated: Number of Sessions, Level Start, Level End, Combat, Exploration, Social Interaction, Investigation, Structural Openness, Seriousness, Darkness / Horror Intensity, GM Preparation Burden, Player Beginner Suitability, and GM Beginner Suitability;
+- all 879 adventures resolve to canonical source Markdown;
+- Level Start and Level End are positive numeric values; and
+- `manifest.json`, `adventures.jsonl`, and `sources.jsonl` are byte-identical across the two builds.
+
+The benchmark writes the durable machine-readable record to:
+
+```text
+docs/benchmarks/amc-6.0-full-corpus.yml
+```
+
+The report records exact AMC/AFAO/source-registry identities, relevant repository
+HEADs and dirty-state observations, full-corpus/source-resolution counts, 13-column
+coverage, build timings, generated-pack SHA-256 values, and every gate result. The
+report is historical evidence, not moving catalog authority; `PROJECT_STATE.yml`
+continues to own live catalog roles.

@@ -1,0 +1,176 @@
+---
+schema_version: adventurefinder-frontier-full-corpus-benchmark/v0.1
+benchmark:
+  id: amc-6.0-full-corpus
+  generated_at: '2026-09-19T23:23:38Z'
+  result: FAIL
+  failures:
+  - level_values_positive_numeric
+  benchmark_harness_sha256: 5c7c36e82857bde6ca577c5f4594714080d1c659ce4fc2b433802b343596ae7a
+inputs:
+  amc:
+    filename: 5e_Adventure_Master_Catalog_6.0.xlsx
+    path: "/Users/davidnorris/code/af-xlsx-data-sources/5e_Adventure_Master_Catalog_6.0.xlsx"
+    version: '6.0'
+    sha256: 56e071a90c0e5adef82c19775a0f358cb93df647470eb64153f251475dba0920
+    bytes: 295632
+  project_state:
+    path: "/Users/davidnorris/code/af-xlsx-data-sources/PROJECT_STATE.yml"
+    sha256: 8e2123090339b1ac3e62b7526acb118bbc2ef79921361f5f1fbc1a915d8fc98c
+    catalog_head:
+      version: '6.0'
+      filename: 5e_Adventure_Master_Catalog_6.0.xlsx
+      sha256: 56e071a90c0e5adef82c19775a0f358cb93df647470eb64153f251475dba0920
+      bytes: 295632
+  afao:
+    filename: AdventureFinder_Analysis_Ontology_v1.6.1.md
+    path: "/Users/davidnorris/code/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md"
+    version: 1.6.1
+    sha256: dcfad224ab9517272504a508f935a804032d04a7c812ede10498921ce4585fa1
+    bytes: 339101
+  source_registry:
+    path: "/Users/davidnorris/code/md-for-llm-book-content/source_registry.yml"
+    schema_version: adventurefinder-source-registry/v0.1
+    sha256: d7663ff95ebdb10c8dd82595220ed0dd6327d385327bd9106bc6601c51bb1ab0
+repository_state:
+  af-frontier-pack:
+    head: 27c2bd4aee1463d08137bb79ddc29d313e7c747f
+    dirty: true
+  af-xlsx-data-sources:
+    head: 9b6897644dd3ca529600e5ea6d9b81ed821c8a54
+    dirty: false
+  md-specification-files:
+    head: ed85fc1c0c94761ba57f605abb008be5330fce95
+    dirty: false
+  md-for-llm-book-content:
+    head: 2c1108929f9bce0f35a87c55860e123cea13c2c2
+    dirty: false
+full_corpus:
+  adventures: 879
+  sources: 62
+  source_resolved: 879
+  source_unresolved: 0
+  unresolved_source_books: []
+established_13_column_baseline:
+  columns:
+  - Number of Sessions
+  - Level Start
+  - Level End
+  - Combat Emphasis
+  - Exploration Emphasis
+  - Social Interaction Emphasis
+  - Investigation Emphasis
+  - Structural Openness
+  - Seriousness
+  - Darkness / Horror Intensity
+  - GM Preparation Burden
+  - Player Beginner Suitability
+  - GM Beginner Suitability
+  expected_cells: 11427
+  populated_cells: 11427
+  missing_cells: 0
+  missing_by_column:
+    Number of Sessions: 0
+    Level Start: 0
+    Level End: 0
+    Combat Emphasis: 0
+    Exploration Emphasis: 0
+    Social Interaction Emphasis: 0
+    Investigation Emphasis: 0
+    Structural Openness: 0
+    Seriousness: 0
+    Darkness / Horror Intensity: 0
+    GM Preparation Burden: 0
+    Player Beginner Suitability: 0
+    GM Beginner Suitability: 0
+  invalid_level_adventure_ids:
+  - ADV-0034
+  - ADV-0698
+  - ADV-0699
+  - ADV-0700
+  - ADV-0701
+  - ADV-0702
+  - ADV-0703
+  - ADV-0704
+  - ADV-0705
+  - ADV-0706
+  - ADV-0707
+  - ADV-0708
+  - ADV-0709
+  - ADV-0710
+  - ADV-0711
+  - ADV-0712
+  - ADV-0713
+  - ADV-0714
+  - ADV-0715
+  - ADV-0716
+  - ADV-0717
+  - ADV-0718
+  - ADV-0719
+  - ADV-0720
+  - ADV-0721
+  - ADV-0722
+  - ADV-0723
+  - ADV-0724
+  - ADV-0725
+  - ADV-0726
+  - ADV-0727
+  - ADV-0728
+  - ADV-0729
+  - ADV-0730
+  - ADV-0731
+  - ADV-0732
+  - ADV-0733
+  - ADV-0734
+  - ADV-0735
+  - ADV-0736
+  - ADV-0738
+  - ADV-0739
+  - ADV-0740
+  - ADV-0750
+  - ADV-0752
+  - ADV-0754
+  - ADV-0755
+  - ADV-0758
+  - ADV-0760
+  - ADV-0761
+  - ADV-0764
+  - ADV-0765
+  - ADV-0766
+  - ADV-0767
+  - ADV-0768
+  - ADV-0769
+  - ADV-0770
+  - ADV-0772
+  - ADV-0778
+  - ADV-0779
+  - ADV-0780
+  - ADV-0781
+  - ADV-0783
+  - ADV-0785
+  - ADV-0786
+  - ADV-0790
+  - ADV-0803
+  - ADV-0804
+  - ADV-0805
+  - ADV-0806
+repeatability:
+  run_1_seconds: 2.915789
+  run_2_seconds: 2.82204
+  run_1_sha256:
+    manifest.json: 865091131c4a7ae14e753e65812a9dd8af154b6a965d174e1e27fe9e8d5bf307
+    adventures.jsonl: d889e68f1356f9e9063542889397934624ea2462ac544f06d380325a78d9443d
+    sources.jsonl: d225d073298949b7721a0b1bded4403d9d035c0f3af91d40ecac73c2b3e2fa53
+  run_2_sha256:
+    manifest.json: 865091131c4a7ae14e753e65812a9dd8af154b6a965d174e1e27fe9e8d5bf307
+    adventures.jsonl: d889e68f1356f9e9063542889397934624ea2462ac544f06d380325a78d9443d
+    sources.jsonl: d225d073298949b7721a0b1bded4403d9d035c0f3af91d40ecac73c2b3e2fa53
+  byte_identical: true
+checks:
+  doctor_passed_both_builds: true
+  amc_identity_matches_frozen_6_0: true
+  adventure_count_is_879: true
+  baseline_13_columns_complete: true
+  level_values_positive_numeric: false
+  all_adventures_source_resolved: true
+  repeat_builds_byte_identical: true

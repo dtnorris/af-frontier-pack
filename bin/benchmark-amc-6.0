@@ -1,0 +1,242 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "digest"
+require "fileutils"
+require "json"
+require "open3"
+require "optparse"
+require "tmpdir"
+require "time"
+require "yaml"
+
+$LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
+require "af_frontier"
+
+EXPECTED_AMC = {
+  "version" => "6.0",
+  "filename" => "5e_Adventure_Master_Catalog_6.0.xlsx",
+  "bytes" => 295_632,
+  "sha256" => "56e071a90c0e5adef82c19775a0f358cb93df647470eb64153f251475dba0920"
+}.freeze
+
+EXPECTED_ADVENTURES = 879
+EXPECTED_BASELINE_COLUMNS = 13
+EXPECTED_BASELINE_CELLS = EXPECTED_ADVENTURES * EXPECTED_BASELINE_COLUMNS
+
+BASELINE_ACCESSORS = {
+  "Number of Sessions" => ->(adventure) { adventure.dig("assessments", "NoS") },
+  "Level Start" => ->(adventure) { adventure.dig("assessments", "LSLE", "start") },
+  "Level End" => ->(adventure) { adventure.dig("assessments", "LSLE", "end") },
+  "Combat Emphasis" => ->(adventure) { adventure.dig("assessments", "CE") },
+  "Exploration Emphasis" => ->(adventure) { adventure.dig("assessments", "EE") },
+  "Social Interaction Emphasis" => ->(adventure) { adventure.dig("assessments", "SIE") },
+  "Investigation Emphasis" => ->(adventure) { adventure.dig("assessments", "IE") },
+  "Structural Openness" => ->(adventure) { adventure.dig("assessments", "SO") },
+  "Seriousness" => ->(adventure) { adventure.dig("assessments", "SR") },
+  "Darkness / Horror Intensity" => ->(adventure) { adventure.dig("assessments", "DHI") },
+  "GM Preparation Burden" => ->(adventure) { adventure.dig("assessments", "GMPB") },
+  "Player Beginner Suitability" => ->(adventure) { adventure.dig("assessments", "PBS") },
+  "GM Beginner Suitability" => ->(adventure) { adventure.dig("assessments", "GMBS") }
+}.freeze
+
+PACK_FILES = %w[manifest.json adventures.jsonl sources.jsonl].freeze
+REPOSITORIES = %w[
+  af-frontier-pack
+  af-xlsx-data-sources
+  md-specification-files
+  md-for-llm-book-content
+].freeze
+
+options = {
+  project_root: ENV.fetch("AF_PROJECT_ROOT", AfFrontier::Paths::DEFAULT_PROJECT_ROOT),
+  output: nil,
+  force: false
+}
+
+OptionParser.new do |parser|
+  parser.banner = "Usage: bin/benchmark-amc-6.0 [options]"
+  parser.on("--project-root PATH", "AdventureFinder workspace root") { |v| options[:project_root] = v }
+  parser.on("--output PATH", "Benchmark YAML output path") { |v| options[:output] = v }
+  parser.on("--force", "Overwrite an existing benchmark report") { options[:force] = true }
+end.parse!
+
+repo_root = File.expand_path("..", __dir__)
+project_root = File.expand_path(options[:project_root])
+options[:output] ||= File.join(repo_root, "docs", "benchmarks", "amc-6.0-full-corpus.yml")
+output_path = File.expand_path(options[:output])
+
+if File.exist?(output_path) && !options[:force]
+  abort "ERROR: benchmark report already exists: #{output_path} (use --force to replace it)"
+end
+
+amc_path = File.join(project_root, "af-xlsx-data-sources", EXPECTED_AMC.fetch("filename"))
+project_state_path = File.join(project_root, "af-xlsx-data-sources", "PROJECT_STATE.yml")
+afao_path = File.join(project_root, "md-specification-files", "AdventureFinder_Analysis_Ontology_v1.6.1.md")
+corpus_root = File.join(project_root, "md-for-llm-book-content")
+source_registry_path = File.join(corpus_root, "source_registry.yml")
+
+required = [amc_path, project_state_path, afao_path, source_registry_path]
+required.each { |path| abort "ERROR: required benchmark input missing: #{path}" unless File.file?(path) }
+abort "ERROR: corpus root missing: #{corpus_root}" unless Dir.exist?(corpus_root)
+
+actual_amc_bytes = File.size(amc_path)
+actual_amc_sha = Digest::SHA256.file(amc_path).hexdigest
+abort "ERROR: AMC 6.0 byte-size mismatch: expected #{EXPECTED_AMC['bytes']}, got #{actual_amc_bytes}" unless actual_amc_bytes == EXPECTED_AMC.fetch("bytes")
+abort "ERROR: AMC 6.0 SHA-256 mismatch: expected #{EXPECTED_AMC['sha256']}, got #{actual_amc_sha}" unless actual_amc_sha == EXPECTED_AMC.fetch("sha256")
+
+project_state = YAML.safe_load_file(project_state_path, aliases: false) || {}
+head = project_state.fetch("catalog_head")
+abort "ERROR: PROJECT_STATE catalog_head is #{head['version'].inspect}, expected 6.0 for this milestone benchmark" unless head["version"].to_s == EXPECTED_AMC.fetch("version")
+abort "ERROR: PROJECT_STATE catalog_head filename does not identify AMC 6.0" unless head["filename"] == EXPECTED_AMC.fetch("filename")
+abort "ERROR: PROJECT_STATE catalog_head SHA-256 does not match AMC 6.0" unless head["sha256"] == EXPECTED_AMC.fetch("sha256")
+abort "ERROR: PROJECT_STATE catalog_head byte size does not match AMC 6.0" unless head["bytes"] == EXPECTED_AMC.fetch("bytes")
+
+registry = AfFrontier::SourceRegistry.new(path: source_registry_path, corpus_root: corpus_root)
+afao = AfFrontier::AnalysisOntologyResolver.new.resolve(explicit_afao: afao_path)
+
+def repo_state(path)
+  head_out, head_status = Open3.capture2e("git", "-C", path, "rev-parse", "HEAD")
+  status_out, status_status = Open3.capture2e("git", "-C", path, "status", "--porcelain")
+  {
+    "head" => head_status.success? ? head_out.strip : nil,
+    "dirty" => status_status.success? ? !status_out.empty? : nil
+  }
+end
+
+def sha256(path)
+  Digest::SHA256.file(path).hexdigest
+end
+
+def pack_hashes(root)
+  PACK_FILES.to_h { |name| [name, sha256(File.join(root, name))] }
+end
+
+def build_pack(amc_path:, registry:, afao_path:, output_root:)
+  started = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  manifest = AfFrontier::PackBuilder.new(
+    amc_path: amc_path,
+    source_registry: registry,
+    afao_path: afao_path,
+    output_root: output_root
+  ).build
+  pack = AfFrontier::Pack.new(root: output_root)
+  AfFrontier::Doctor.new(pack: pack).check
+  elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started
+  [manifest, pack, elapsed]
+end
+
+report = nil
+Dir.mktmpdir("af-frontier-amc-6.0-") do |tmp|
+  run1_root = File.join(tmp, "run-1")
+  run2_root = File.join(tmp, "run-2")
+
+  manifest1, pack1, elapsed1 = build_pack(
+    amc_path: amc_path,
+    registry: registry,
+    afao_path: afao.path,
+    output_root: run1_root
+  )
+  manifest2, _pack2, elapsed2 = build_pack(
+    amc_path: amc_path,
+    registry: registry,
+    afao_path: afao.path,
+    output_root: run2_root
+  )
+
+  adventures = pack1.adventures
+  missing_by_column = BASELINE_ACCESSORS.to_h do |name, accessor|
+    [name, adventures.count { |adventure| accessor.call(adventure).nil? }]
+  end
+  missing_cells = missing_by_column.values.sum
+  populated_cells = (adventures.length * EXPECTED_BASELINE_COLUMNS) - missing_cells
+
+  invalid_level_ids = adventures.filter_map do |adventure|
+    start_level = adventure.dig("assessments", "LSLE", "start")
+    end_level = adventure.dig("assessments", "LSLE", "end")
+    next if start_level.is_a?(Numeric) && start_level.positive? && end_level.is_a?(Numeric) && end_level.positive?
+    adventure["adventure_id"]
+  end
+
+  hashes1 = pack_hashes(run1_root)
+  hashes2 = pack_hashes(run2_root)
+  deterministic = hashes1 == hashes2
+
+  source_unresolved = manifest1.dig("counts", "source_unresolved")
+  source_resolved = manifest1.dig("counts", "source_resolved")
+  checks = {
+    "doctor_passed_both_builds" => true,
+    "amc_identity_matches_frozen_6_0" => manifest1.dig("inputs", "amc", "version") == EXPECTED_AMC.fetch("version") &&
+      manifest1.dig("inputs", "amc", "sha256") == EXPECTED_AMC.fetch("sha256") &&
+      manifest1.dig("inputs", "amc", "bytes") == EXPECTED_AMC.fetch("bytes"),
+    "adventure_count_is_879" => adventures.length == EXPECTED_ADVENTURES && manifest1.dig("counts", "adventures") == EXPECTED_ADVENTURES,
+    "baseline_13_columns_complete" => missing_cells.zero? && populated_cells == EXPECTED_BASELINE_CELLS,
+    "level_values_positive_numeric" => invalid_level_ids.empty?,
+    "all_adventures_source_resolved" => source_unresolved == 0 && source_resolved == EXPECTED_ADVENTURES,
+    "repeat_builds_byte_identical" => deterministic
+  }
+
+  failures = checks.filter_map { |name, passed| name unless passed }
+  repository_state = REPOSITORIES.to_h do |name|
+    [name, repo_state(File.join(project_root, name))]
+  end
+
+  report = {
+    "schema_version" => "adventurefinder-frontier-full-corpus-benchmark/v0.1",
+    "benchmark" => {
+      "id" => "amc-6.0-full-corpus",
+      "generated_at" => Time.now.utc.iso8601,
+      "result" => failures.empty? ? "PASS" : "FAIL",
+      "failures" => failures,
+      "benchmark_harness_sha256" => Digest::SHA256.file(__FILE__).hexdigest
+    },
+    "inputs" => {
+      "amc" => manifest1.dig("inputs", "amc"),
+      "project_state" => {
+        "path" => File.realpath(project_state_path),
+        "sha256" => Digest::SHA256.file(project_state_path).hexdigest,
+        "catalog_head" => head
+      },
+      "afao" => manifest1.dig("inputs", "afao"),
+      "source_registry" => manifest1.dig("inputs", "source_registry")
+    },
+    "repository_state" => repository_state,
+    "full_corpus" => {
+      "adventures" => adventures.length,
+      "sources" => manifest1.dig("counts", "sources"),
+      "source_resolved" => source_resolved,
+      "source_unresolved" => source_unresolved,
+      "unresolved_source_books" => manifest1.fetch("unresolved_source_books")
+    },
+    "established_13_column_baseline" => {
+      "columns" => BASELINE_ACCESSORS.keys,
+      "expected_cells" => EXPECTED_BASELINE_CELLS,
+      "populated_cells" => populated_cells,
+      "missing_cells" => missing_cells,
+      "missing_by_column" => missing_by_column,
+      "invalid_level_adventure_ids" => invalid_level_ids
+    },
+    "repeatability" => {
+      "run_1_seconds" => elapsed1.round(6),
+      "run_2_seconds" => elapsed2.round(6),
+      "run_1_sha256" => hashes1,
+      "run_2_sha256" => hashes2,
+      "byte_identical" => deterministic
+    },
+    "checks" => checks
+  }
+end
+
+FileUtils.mkdir_p(File.dirname(output_path))
+File.write(output_path, YAML.dump(report))
+puts "AMC 6.0 full-corpus benchmark: #{report.dig('benchmark', 'result')}"
+puts "  adventures: #{report.dig('full_corpus', 'adventures')}"
+puts "  baseline cells: #{report.dig('established_13_column_baseline', 'populated_cells')}/#{EXPECTED_BASELINE_CELLS}"
+puts "  source resolved: #{report.dig('full_corpus', 'source_resolved')}/#{EXPECTED_ADVENTURES}"
+puts "  repeat builds byte-identical: #{report.dig('repeatability', 'byte_identical')}"
+puts "  report: #{output_path}"
+
+unless report.dig("benchmark", "result") == "PASS"
+  warn "FAILED CHECKS: #{report.dig('benchmark', 'failures').join(', ')}"
+  exit 1
+end

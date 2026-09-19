@@ -45,7 +45,7 @@ bin/af-frontier bundle --ids ADV-0034,ADV-0287,ADV-0303
 An explicit AMC always wins:
 
 ```bash
-bin/af-frontier build --amc /path/to/5e_Adventure_Master_Catalog_5.7.2.xlsx
+bin/af-frontier build --amc /path/to/5e_Adventure_Master_Catalog_X.Y.xlsx
 ```
 
 If `--amc` is omitted, the CLI resolves the authoritative `catalog_head` from a project-state manifest and **prints the exact resolved file before building**. It never treats the numerically largest filename as canonical.
@@ -119,7 +119,7 @@ By default this resolves `catalog_head` from `af-xlsx-data-sources/PROJECT_STATE
 
 ```bash
 bin/af-frontier build \
-  --amc /Users/davidnorris/code/af-xlsx-data-sources/5e_Adventure_Master_Catalog_5.7.2.xlsx \
+  --amc /Users/davidnorris/code/af-xlsx-data-sources/5e_Adventure_Master_Catalog_X.Y.xlsx \
   --source-registry /Users/davidnorris/code/md-for-llm-book-content/source_registry.yml \
   --corpus-root /Users/davidnorris/code/md-for-llm-book-content \
   --afao /Users/davidnorris/code/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
