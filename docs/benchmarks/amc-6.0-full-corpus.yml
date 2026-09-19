@@ -2,11 +2,10 @@
 schema_version: adventurefinder-frontier-full-corpus-benchmark/v0.1
 benchmark:
   id: amc-6.0-full-corpus
-  generated_at: '2026-09-19T23:23:38Z'
-  result: FAIL
-  failures:
-  - level_values_positive_numeric
-  benchmark_harness_sha256: 5c7c36e82857bde6ca577c5f4594714080d1c659ce4fc2b433802b343596ae7a
+  generated_at: '2026-09-19T23:34:19Z'
+  result: PASS
+  failures: []
+  benchmark_harness_sha256: 18944bf88f2745bca27a9a56d935aba757d20774597167a394942d6befed7259
 inputs:
   amc:
     filename: 5e_Adventure_Master_Catalog_6.0.xlsx
@@ -34,8 +33,8 @@ inputs:
     sha256: d7663ff95ebdb10c8dd82595220ed0dd6327d385327bd9106bc6601c51bb1ab0
 repository_state:
   af-frontier-pack:
-    head: 27c2bd4aee1463d08137bb79ddc29d313e7c747f
-    dirty: true
+    head: 95cf928a825ffd6396e2a328e31af0f7e066b736
+    dirty: false
   af-xlsx-data-sources:
     head: 9b6897644dd3ca529600e5ea6d9b81ed821c8a54
     dirty: false
@@ -83,7 +82,8 @@ established_13_column_baseline:
     GM Preparation Burden: 0
     Player Beginner Suitability: 0
     GM Beginner Suitability: 0
-  invalid_level_adventure_ids:
+  invalid_level_adventure_ids: []
+  uncertain_level_adventure_ids:
   - ADV-0034
   - ADV-0698
   - ADV-0699
@@ -155,8 +155,8 @@ established_13_column_baseline:
   - ADV-0805
   - ADV-0806
 repeatability:
-  run_1_seconds: 2.915789
-  run_2_seconds: 2.82204
+  run_1_seconds: 2.675533
+  run_2_seconds: 2.765816
   run_1_sha256:
     manifest.json: 865091131c4a7ae14e753e65812a9dd8af154b6a965d174e1e27fe9e8d5bf307
     adventures.jsonl: d889e68f1356f9e9063542889397934624ea2462ac544f06d380325a78d9443d
@@ -171,6 +171,6 @@ checks:
   amc_identity_matches_frozen_6_0: true
   adventure_count_is_879: true
   baseline_13_columns_complete: true
-  level_values_positive_numeric: false
+  level_values_conform_to_afao_levels_v2_1: true
   all_adventures_source_resolved: true
   repeat_builds_byte_identical: true
