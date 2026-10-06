@@ -55,7 +55,7 @@ Resolution order in v0.1:
 1. `--amc PATH`
 2. `AF_FRONTIER_AMC`
 3. `--state PATH`, resolving role `catalog_head`
-4. `/Users/davidnorris/code/af-xlsx-data-sources/PROJECT_STATE.yml` (relative to `AF_PROJECT_ROOT`)
+4. `/Users/davidnorris/code/adventure-finder-components/af-xlsx-data-sources/PROJECT_STATE.yml` (relative to `AF_PROJECT_ROOT`)
 
 The production project-state contract is `adventurefinder-project-state/v0.2`. For a resolved `catalog_head`, `af-frontier` verifies the declared version/filename, byte size, and SHA-256 before building. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
 
@@ -115,14 +115,14 @@ Normal production build:
 bin/af-frontier build
 ```
 
-By default this resolves `catalog_head` from `af-xlsx-data-sources/PROJECT_STATE.yml`, resolves the pinned AFAO contract from `config/authority.yml`, uses `/Users/davidnorris/code/md-for-llm-book-content` as the corpus root, and reads `source_registry.yml` from that corpus root. These inputs remain explicitly overridable:
+By default this resolves `catalog_head` from `af-xlsx-data-sources/PROJECT_STATE.yml`, resolves the pinned AFAO contract from `config/authority.yml`, uses `/Users/davidnorris/code/adventure-finder-components/md-for-llm-book-content` as the corpus root, and reads `source_registry.yml` from that corpus root. These inputs remain explicitly overridable:
 
 ```bash
 bin/af-frontier build \
-  --amc /Users/davidnorris/code/af-xlsx-data-sources/5e_Adventure_Master_Catalog_X.Y.xlsx \
-  --source-registry /Users/davidnorris/code/md-for-llm-book-content/source_registry.yml \
-  --corpus-root /Users/davidnorris/code/md-for-llm-book-content \
-  --afao /Users/davidnorris/code/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
+  --amc /Users/davidnorris/code/adventure-finder-components/af-xlsx-data-sources/5e_Adventure_Master_Catalog_X.Y.xlsx \
+  --source-registry /Users/davidnorris/code/adventure-finder-components/md-for-llm-book-content/source_registry.yml \
+  --corpus-root /Users/davidnorris/code/adventure-finder-components/md-for-llm-book-content \
+  --afao /Users/davidnorris/code/adventure-finder-components/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
 ```
 
 The production source registry contract is `adventurefinder-source-registry/v0.1`. Explicit mappings may point to one Markdown file or to page-bounded segments. `page_marker_offset`, when present, must be an explicitly signed integer string such as `"+3"` or `"-4"`. If a source has no explicit registry entry, the same deterministic normalized-filename fallback used by `af-cli-scoring-utility` is available and is surfaced with a warning; ambiguity fails closed.

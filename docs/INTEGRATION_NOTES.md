@@ -7,7 +7,7 @@ The v0.1 live-integration pass verified the initial repo's three deliberately op
 The canonical moving catalog authority is:
 
 ```text
-/Users/davidnorris/code/af-xlsx-data-sources/PROJECT_STATE.yml
+/Users/davidnorris/code/adventure-finder-components/af-xlsx-data-sources/PROJECT_STATE.yml
 ```
 
 relative to `AF_PROJECT_ROOT`.
