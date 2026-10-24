@@ -20,16 +20,20 @@ module AfFrontier
       Pathname.new(ENV.fetch("AF_FRONTIER_OUTPUT", repo_root.join("output/frontier-pack").to_s)).expand_path
     end
 
+    # Returns the manifest path in the currently verified generation; raises
+    # IntegrityError if the pack is unavailable. Retain a Pack for multiple reads.
     def manifest_path
-      output_root.join("manifest.json")
+      Pathname.new(Pack.new(root: output_root).artifact_root).join("manifest.json")
     end
 
+    # Returns the current verified adventures path, or raises IntegrityError.
     def adventures_path
-      output_root.join("adventures.jsonl")
+      Pathname.new(Pack.new(root: output_root).artifact_root).join("adventures.jsonl")
     end
 
+    # Returns the current verified sources path, or raises IntegrityError.
     def sources_path
-      output_root.join("sources.jsonl")
+      Pathname.new(Pack.new(root: output_root).artifact_root).join("sources.jsonl")
     end
 
     def bundles_root
