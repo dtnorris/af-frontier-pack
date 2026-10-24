@@ -18,13 +18,24 @@ Deterministically package and expose AdventureFinder's canonical knowledge so a 
 
 ```text
 output/frontier-pack/
-├── manifest.json
-├── adventures.jsonl
-├── sources.jsonl
+├── CURRENT
+├── generations/
+│   └── generation-<unique-id>/
+│       ├── manifest.json
+│       ├── adventures.jsonl
+│       └── sources.jsonl
 └── bundles/
 ```
 
 `output/` is project-wide generated state and must be gitignored.
+
+`CURRENT` is the sole publication commit point. It identifies one complete
+generation and its manifest SHA-256; the manifest binds both JSONL artifact
+hashes. Readers bind once and verify all artifacts before exposing data.
+Prepublication validation failures preserve the selected generation, and
+published generations are retained for existing readers. Legacy flat roots
+require an explicit rebuild. See [README output](../README.md#output) for
+migration, file-consumer compatibility, and safe reclamation responsibilities.
 
 ## Commands
 

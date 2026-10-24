@@ -113,8 +113,11 @@ def valid_level_value?(value)
   (value.is_a?(Numeric) && value.positive?) || value == LEVEL_UNCERTAIN
 end
 
+# Returns hashes of the complete generation selected at root, raising
+# IntegrityError if any pack artifact is unavailable or corrupt.
 def pack_hashes(root)
-  PACK_FILES.to_h { |name| [name, sha256(File.join(root, name))] }
+  generation = AfFrontier::Pack.new(root: root).artifact_root
+  PACK_FILES.to_h { |name| [name, sha256(File.join(generation, name))] }
 end
 
 def build_pack(amc_path:, registry:, afao_path:, output_root:)

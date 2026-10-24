@@ -18,9 +18,10 @@ canonical AdventureFinder artifacts
         v
    af-frontier-pack
         |
-        +-- output/frontier-pack/manifest.json
-        +-- output/frontier-pack/adventures.jsonl
-        +-- output/frontier-pack/sources.jsonl
+        +-- output/frontier-pack/CURRENT
+        +-- output/frontier-pack/generations/<generation>/manifest.json
+        +-- output/frontier-pack/generations/<generation>/adventures.jsonl
+        +-- output/frontier-pack/generations/<generation>/sources.jsonl
         +-- output/frontier-pack/bundles/*
         |
         v
@@ -99,11 +100,44 @@ The canonical pack is written to:
 
 ```text
 output/frontier-pack/
-├── manifest.json
-├── adventures.jsonl
-├── sources.jsonl
+├── CURRENT
+├── generations/
+│   └── generation-<unique-id>/
+│       ├── manifest.json
+│       ├── adventures.jsonl
+│       └── sources.jsonl
 └── bundles/
 ```
+
+Builds validate the input descriptors, catalog records, and source bindings with
+the existing `doctor` rules before publication. Unresolved sources retain their
+existing explicit unresolved status. Complete artifacts are written privately on
+the same filesystem; one atomic replacement of `CURRENT` selects the generation.
+Its manifest records SHA-256 hashes for both JSONL files, and `CURRENT` records
+the manifest hash. Manifest and JSONL bytes remain deterministic across identical
+builds; generation names and pointer bytes are intentionally unique.
+
+`Pack.new(root: ...)` binds once and loads all three verified artifacts before
+returning. Reuse that instance for related reads; `root` remains the output root,
+and `artifact_root` identifies its selected generation. `Paths.manifest_path`,
+`adventures_path`, and `sources_path` resolve the current verified generation.
+Missing, malformed, or mismatched artifacts raise `IntegrityError` without a
+fallback to another generation. CLI commands and source resolution use this same
+reader. Authority files and source Markdown must remain stable during a build.
+
+Legacy flat roots have no verifiable generation and require `build` before use.
+A successful rebuild creates `CURRENT` without modifying the old flat files;
+those files are ignored thereafter. External file consumers must resolve one
+generation rather than reading the old flat paths.
+
+An interruption before replacing `CURRENT` leaves the previous generation
+selected; on the first build it leaves no usable pack. After replacement, the
+new generation is committed even if the writer subsequently reports an error.
+Previous generations remain usable by bound readers. Builds never delete
+published generations or another writer's files; abandoned staging directories
+can remain after abrupt process exit. Reclaim old output only when all readers
+and writers have stopped. Atomic visibility assumes local filesystem rename
+semantics; it does not promise persistence through power loss.
 
 Every file-producing `bundle` command ends by printing its **absolute output path**. When stdout is reserved for machine-readable content, human status is written to stderr so Unix pipelines stay clean.
 

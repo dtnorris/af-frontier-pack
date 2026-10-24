@@ -4,8 +4,11 @@ require "json"
 require "digest"
 require "fileutils"
 require "pathname"
+require "tmpdir"
+require "tempfile"
 
 module AfFrontier
+  # Builds validated catalog snapshots and publishes each through one CURRENT rename.
   class PackBuilder
     ACRONYMS = %w[NoS CE EE SIE IE PPSE TC LFS RSMD SO CPA SR DHI FW GMPB GMID PBS GMBS].freeze
 
@@ -16,6 +19,8 @@ module AfFrontier
       @output_root = Pathname.new(output_root).expand_path
     end
 
+    # Returns the deterministic manifest for the supplied authorities. Validation or
+    # filesystem errors before CURRENT replacement leave the previous pack selected.
     def build
       rows = XlsxCatalogReader.new(@amc_path).rows
       seen = {}
@@ -40,16 +45,44 @@ module AfFrontier
 
       source_records = build_source_records(adventures)
 
-      FileUtils.mkdir_p(@output_root.join("bundles"))
-      Jsonl.write(@output_root.join("adventures.jsonl"), adventures)
-      Jsonl.write(@output_root.join("sources.jsonl"), source_records)
-
       manifest = build_manifest(adventures, source_records, unresolved_sources.uniq.sort)
-      File.write(@output_root.join("manifest.json"), JSON.pretty_generate(manifest) + "\n")
+      # Reuse the existing integrity rules before making any new pack visible.
+      snapshot = Struct.new(:manifest, :adventures, :sources).new(manifest, adventures, source_records)
+      Doctor.new(pack: snapshot).check
+      publish(manifest, adventures, source_records)
       manifest
     end
 
     private
+
+    # Writes complete private artifacts and their hashes, then atomically replaces
+    # CURRENT. Raises filesystem errors; published directories are never reclaimed
+    # here because readers and other writers may still need them.
+    def publish(manifest, adventures, sources)
+      generations = @output_root.join("generations")
+      FileUtils.mkdir_p(generations)
+      FileUtils.mkdir_p(@output_root.join("bundles"))
+      staging = Dir.mktmpdir(".building-", generations.to_s)
+      begin
+        Jsonl.write(File.join(staging, "adventures.jsonl"), adventures)
+        Jsonl.write(File.join(staging, "sources.jsonl"), sources)
+        manifest["artifacts"] = %w[adventures.jsonl sources.jsonl].to_h do |name|
+          [name, { "sha256" => Digest::SHA256.file(File.join(staging, name)).hexdigest }]
+        end
+        manifest_bytes = JSON.pretty_generate(manifest) + "\n"
+        File.write(File.join(staging, "manifest.json"), manifest_bytes)
+        generation = File.basename(staging).sub(".building-", "generation-")
+        File.rename(staging, generations.join(generation))
+        pointer = { "generation" => generation, "manifest_sha256" => Digest::SHA256.hexdigest(manifest_bytes) }
+        Tempfile.create([".CURRENT-", ".json"], @output_root.to_s) do |file|
+          file.write(JSON.generate(pointer) + "\n")
+          file.close
+          File.rename(file.path, @output_root.join("CURRENT"))
+        end
+      ensure
+        FileUtils.rm_rf(staging)
+      end
+    end
 
     def adventure_record(row, source_resolution)
       assessments = {
