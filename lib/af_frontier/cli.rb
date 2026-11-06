@@ -35,12 +35,10 @@ module AfFrontier
 
     private
 
+    # Builds from selected authorities after parsing all overrides. Returns zero
+    # on success; missing configuration/invalid operands raise AfFrontier errors.
     def build
-      opts = {
-        output: Paths.output_root.to_s,
-        corpus_root: Paths.project_root.join("md-for-llm-book-content").to_s,
-        source_registry: nil
-      }
+      opts = {}
       parser = OptionParser.new do |o|
         o.banner = "Usage: bin/af-frontier build [options]"
         o.on("--amc PATH") { |v| opts[:amc] = v }
@@ -51,9 +49,16 @@ module AfFrontier
         o.on("--output PATH") { |v| opts[:output] = v }
       end
       parser.parse!(@argv)
+      opts.each do |name, value|
+        if value.to_s.strip.empty?
+          raise ConfigurationError, "--#{name.to_s.tr('_', '-')} requires a nonblank path"
+        end
+      end
+
+      opts[:output] ||= Paths.output_root.to_s
 
       resolution = CanonicalHeadResolver.new.resolve(explicit_amc: opts[:amc], state_path: opts[:state])
-      @out.puts(opts[:amc] ? "Using explicit AMC:" : "No --amc supplied. Resolved canonical catalog head:")
+      @out.puts(resolution.role == "explicit" ? "Using explicit AMC (frozen artifact; not accepted-state resolution):" : "No --amc supplied. Resolved canonical catalog head:")
       @out.puts("  #{resolution.path}")
       @out.puts("  version: #{resolution.version}") if resolution.version
       @out.puts("  sha256: #{resolution.sha256}") if resolution.sha256
@@ -68,6 +73,7 @@ module AfFrontier
       @out.puts("Authority: #{afao_resolution.source}")
       @out.puts
 
+      opts[:corpus_root] ||= Paths.project_root.join("md-for-llm-book-content").to_s
       opts[:source_registry] ||= File.join(opts[:corpus_root], "source_registry.yml")
       unless File.file?(opts[:source_registry])
         raise ConfigurationError, "Source registry not found. Supply --source-registry PATH (default tried: #{opts[:source_registry]})"
@@ -195,6 +201,12 @@ module AfFrontier
           bin/af-frontier select --where 'GMPB<=2' [--where 'CPA>=4'] [--ids-only]
           bin/af-frontier source ADV-XXXX [--emit]
           bin/af-frontier bundle --ids ADV-0001,ADV-0002|-' [--with-source] [--format markdown|json]
+
+        Build inputs:
+          --state PATH (catalog_head), or --amc PATH / AF_FRONTIER_AMC (frozen artifact)
+          --afao PATH --source-registry PATH --corpus-root PATH --output PATH
+          AF_PROJECT_ROOT is required only for omitted relative authority/corpus defaults.
+          No project root is discovered. Pack reads need only AF_FRONTIER_OUTPUT.
 
         Generated output lives under:
           #{Paths.output_root}

@@ -6,10 +6,21 @@ module AfFrontier
   module Paths
     module_function
 
-    DEFAULT_PROJECT_ROOT = "/Users/davidnorris/code"
+    # Returns a deliberately configured root for relative build defaults. An
+    # optional resolver root overrides the environment. Raises ConfigurationError
+    # for missing, blank or nonexistent directories; never discovers cwd/home.
+    def project_root(value = nil)
+      value = ENV["AF_PROJECT_ROOT"] if value.nil?
+      if value.to_s.strip.empty?
+        raise ConfigurationError,
+              "AF_PROJECT_ROOT is unconfigured. Set it to an existing library layout directory, " \
+              "or supply --state (or --amc), --afao and --corpus-root explicitly."
+      end
 
-    def project_root
-      Pathname.new(ENV.fetch("AF_PROJECT_ROOT", DEFAULT_PROJECT_ROOT)).expand_path
+      root = Pathname.new(value).expand_path
+      raise ConfigurationError, "AF_PROJECT_ROOT must be an existing directory: #{root}" unless root.directory?
+
+      root
     end
 
     def repo_root

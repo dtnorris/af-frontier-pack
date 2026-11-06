@@ -16,13 +16,17 @@ module AfFrontier
       :path, :source, :role, :version, :sha256, :bytes, keyword_init: true
     )
 
-    def initialize(project_root: Paths.project_root, authority_config: Paths.repo_root.join("config/authority.yml"))
-      @project_root = Pathname.new(project_root).expand_path
+    # Stores optional root/config locators without resolving an unused library.
+    # Resolution validates required authorities and raises the existing errors.
+    def initialize(project_root: nil, authority_config: Paths.repo_root.join("config/authority.yml"))
+      @project_root = project_root
       @authority_config = Pathname.new(authority_config)
     end
 
+    # Returns the selected frozen artifact or validated three-role catalog head.
+    # Explicit paths are cwd-relative; missing/invalid authorities raise ResolutionError.
     def resolve(explicit_amc: nil, state_path: nil)
-      return explicit_resolution(explicit_amc, "--amc") if present?(explicit_amc)
+      return explicit_resolution(explicit_amc, "--amc") unless explicit_amc.nil?
       return explicit_resolution(ENV["AF_FRONTIER_AMC"], "AF_FRONTIER_AMC") if present?(ENV["AF_FRONTIER_AMC"])
 
       config = load_authority_config
@@ -183,10 +187,12 @@ module AfFrontier
       end
     end
 
+    # Yields configured state locators in order, requiring a root only for a
+    # relative entry actually tried. Invalid required roots raise ConfigurationError.
     def configured_manifests(config)
-      Array(config["state_manifests"]).map do |value|
+      Array(config["state_manifests"]).lazy.map do |value|
         path = Pathname.new(value)
-        path.absolute? ? path : @project_root.join(path)
+        path.absolute? ? path : Paths.project_root(@project_root).join(path)
       end
     end
 

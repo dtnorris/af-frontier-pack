@@ -7,10 +7,11 @@ The v0.1 live-integration pass verified the initial repo's three deliberately op
 The canonical moving catalog authority is:
 
 ```text
-/Users/davidnorris/code/adventure-finder-components/af-xlsx-data-sources/PROJECT_STATE.yml
+af-xlsx-data-sources/PROJECT_STATE.yml
 ```
 
-relative to `AF_PROJECT_ROOT`.
+relative to an explicitly configured `AF_PROJECT_ROOT`. Fully explicit selections
+need no project root; see [selection and path semantics](../README.md#project-root).
 
 Its schema is:
 
@@ -28,7 +29,7 @@ catalog_head:
   bytes: ...
 ```
 
-When `--amc` / `AF_FRONTIER_AMC` is not supplied, `af-frontier build` resolves this role and verifies the declared filename/version, byte size, and SHA-256. It never derives canonicality from filename ordering.
+When `--amc` / `AF_FRONTIER_AMC` is not supplied, `af-frontier build` validates all three project-state roles, resolves `catalog_head`, and verifies the declared filename/version, byte size, and SHA-256. It never derives canonicality from filename ordering.
 
 Explicit AMC selection remains a deliberate override for historical/frozen work.
 

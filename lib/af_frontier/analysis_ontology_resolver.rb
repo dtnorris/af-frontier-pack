@@ -20,16 +20,20 @@ module AfFrontier
       match[1]
     end
 
+    # Stores optional root/config locators; an explicit ontology needs no root.
+    # Required authority failures are reported by resolve, not construction.
     def initialize(
-      project_root: Paths.project_root,
+      project_root: nil,
       authority_config: Paths.repo_root.join("config/authority.yml")
     )
-      @project_root = Pathname.new(project_root).expand_path
+      @project_root = project_root
       @authority_config = Pathname.new(authority_config).expand_path
     end
 
+    # Returns the explicit ontology or exact configured authority. Explicit paths
+    # are cwd-relative; invalid authorities raise ResolutionError/ConfigurationError.
     def resolve(explicit_afao: nil)
-      return resolution_for(explicit_afao, "--afao") if present?(explicit_afao)
+      return resolution_for(explicit_afao, "--afao") unless explicit_afao.nil?
 
       config = load_authority_config
       entry = config["afao"]
@@ -44,7 +48,7 @@ module AfFrontier
       end
 
       path = Pathname.new(configured_path)
-      path = @project_root.join(path) unless path.absolute?
+      path = Paths.project_root(@project_root).join(path) unless path.absolute?
       resolution = resolution_for(path, @authority_config.realpath.to_s)
 
       expected_filename = "AdventureFinder_Analysis_Ontology_v#{expected_version}.md"
@@ -87,10 +91,6 @@ module AfFrontier
       YAML.safe_load(@authority_config.read, permitted_classes: [], aliases: false) || {}
     rescue Psych::Exception => e
       raise ConfigurationError, "Could not parse authority config #{@authority_config}: #{e.message}"
-    end
-
-    def present?(value)
-      !value.nil? && !value.to_s.strip.empty?
     end
   end
 end

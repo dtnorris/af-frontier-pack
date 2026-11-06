@@ -39,10 +39,11 @@ AMC 6.0 is the first whole-Adventure-Catalog benchmark for the established
 benchmark, separate from the qualitative usefulness questions above.
 
 Run it from the repository root with the authoritative AdventureFinder sibling
-checkouts under `AF_PROJECT_ROOT` (default `/Users/davidnorris/code`):
+checkouts under an explicitly selected `AF_PROJECT_ROOT` (or pass
+`--project-root PATH`; there is no implicit personal root):
 
 ```bash
-bin/benchmark-amc-6.0
+AF_PROJECT_ROOT=/path/to/existing/components bin/benchmark-amc-6.0
 ```
 
 The harness uses the exact frozen AMC 6.0 artifact identity (295,632 bytes,

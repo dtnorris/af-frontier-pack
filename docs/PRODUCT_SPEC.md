@@ -14,6 +14,15 @@ Deterministically package and expose AdventureFinder's canonical knowledge so a 
 - Exact current AFAO authority, resolved deterministically and required for every build.
 - `af-xlsx-data-sources/PROJECT_STATE.yml` (`adventurefinder-project-state/v0.2`) for default `catalog_head` resolution.
 
+A project root is optional: fully explicit state/catalog, ontology, registry and
+corpus selections need none. Relative configured authority paths and the default
+corpus require an existing, explicitly selected `AF_PROJECT_ROOT`. Missing/blank
+means unconfigured, with no cwd/home discovery. Resolve defaults after options
+and only when needed; invalid selected inputs fail without another-library
+fallback. Explicit paths remain cwd-relative; manifest filenames and registry
+mappings retain their owner-relative semantics. Existing pack reads need only
+the selected output, independent of build roots. See [README](../README.md#project-root).
+
 ## Outputs
 
 ```text
@@ -48,7 +57,7 @@ migration, file-consumer compatibility, and safe reclamation responsibilities.
 
 ## AMC resolution
 
-Explicit `--amc` wins. Otherwise resolve `catalog_head` from the authoritative project-state manifest, verify its version/filename/byte-size/SHA-256 declaration, and announce the exact selection. Never select a catalog because its filename appears numerically largest.
+Selection order is `--amc`, `AF_FRONTIER_AMC`, `--state`, then configured state manifests. The first two select an explicit frozen artifact without establishing acceptance. Otherwise validate the complete three-role v0.2 state and resolve `catalog_head` from the authoritative project-state manifest, verify its version/filename/byte-size/SHA-256 declaration, and announce the exact selection. Never select a catalog because its filename appears numerically largest.
 
 ## AFAO resolution
 

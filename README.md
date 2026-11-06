@@ -49,16 +49,16 @@ An explicit AMC always wins:
 bin/af-frontier build --amc /path/to/5e_Adventure_Master_Catalog_X.Y.xlsx
 ```
 
-If `--amc` is omitted, the CLI resolves the authoritative `catalog_head` from a project-state manifest and **prints the exact resolved file before building**. It never treats the numerically largest filename as canonical.
+If both `--amc` and `AF_FRONTIER_AMC` are absent, the CLI resolves the authoritative `catalog_head` from a project-state manifest and **prints the exact resolved file before building**. It never treats the numerically largest filename as canonical.
 
 Resolution order in v0.1:
 
 1. `--amc PATH`
 2. `AF_FRONTIER_AMC`
 3. `--state PATH`, resolving role `catalog_head`
-4. `/Users/davidnorris/code/adventure-finder-components/af-xlsx-data-sources/PROJECT_STATE.yml` (relative to `AF_PROJECT_ROOT`)
+4. `config/authority.yml` → `state_manifests` (currently `af-xlsx-data-sources/PROJECT_STATE.yml`, relative to an explicitly configured `AF_PROJECT_ROOT`)
 
-The production project-state contract is `adventurefinder-project-state/v0.2`. For a resolved `catalog_head`, `af-frontier` verifies the declared version/filename, byte size, and SHA-256 before building. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
+The production project-state contract is `adventurefinder-project-state/v0.2`. For a resolved `catalog_head`, `af-frontier` validates all three roles, including separate `matcher_authorized_baseline` and `production_dependency_floor` bindings, and verifies version/filename, byte size, and SHA-256 before building. Explicit `--amc` / `AF_FRONTIER_AMC` selects a frozen artifact; it does not establish library acceptance. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
 
 ### AFAO resolution
 
@@ -82,17 +82,33 @@ The configured path is relative to `AF_PROJECT_ROOT` unless absolute. `af-fronti
 
 ### Project root
 
-The default AdventureFinder checkout root is:
+There is no implicit project root. With fully selected build inputs, leave
+`AF_PROJECT_ROOT` unset. Missing or blank means unconfigured; Frontier Pack never
+discovers a library from cwd, home, or a developer's personal directories.
 
-```text
-/Users/davidnorris/code
-```
-
-Override with:
+Set `AF_PROJECT_ROOT` only when using relative paths from `config/authority.yml`
+or the default corpus `md-for-llm-book-content` beneath that root:
 
 ```bash
-export AF_PROJECT_ROOT=/another/path
+export AF_PROJECT_ROOT=/path/to/existing/components
+bin/af-frontier build
 ```
+
+An existing installation can deliberately retain its legacy location, for example
+`export AF_PROJECT_ROOT=/Users/davidnorris/code` if that directory contains the
+configured sibling layout. This selects existing paths; it moves or initializes
+nothing. Missing/invalid required roots fail with configuration guidance. An
+unused root does not affect explicit inputs or existing pack reads.
+
+Explicit CLI paths remain relative to the invoking cwd unless absolute. State
+filenames are relative to their manifest; registry file mappings are relative to
+the selected corpus. The registry defaults to `source_registry.yml` inside that
+corpus. An invalid explicit operand fails without selecting another library.
+
+`help`, `version` and existing pack commands require no build-time root.
+`--output` wins over `AF_FRONTIER_OUTPUT`; otherwise output defaults beneath
+this code checkout. Set `AF_FRONTIER_OUTPUT` for subsequent pack reads (or use
+`doctor --root PATH`).
 
 ### Output
 
@@ -143,21 +159,33 @@ Every file-producing `bundle` command ends by printing its **absolute output pat
 
 ## Build
 
-Normal production build:
+Build from a deliberately selected library without `AF_PROJECT_ROOT` or
+`AF_FRONTIER_AMC`:
 
 ```bash
-bin/af-frontier build
-```
-
-By default this resolves `catalog_head` from `af-xlsx-data-sources/PROJECT_STATE.yml`, resolves the pinned AFAO contract from `config/authority.yml`, uses `/Users/davidnorris/code/adventure-finder-components/md-for-llm-book-content` as the corpus root, and reads `source_registry.yml` from that corpus root. These inputs remain explicitly overridable:
-
-```bash
+unset AF_PROJECT_ROOT AF_FRONTIER_AMC
+export AF_FRONTIER_OUTPUT=/path/to/selected/frontier-pack
 bin/af-frontier build \
-  --amc /Users/davidnorris/code/adventure-finder-components/af-xlsx-data-sources/5e_Adventure_Master_Catalog_X.Y.xlsx \
-  --source-registry /Users/davidnorris/code/adventure-finder-components/md-for-llm-book-content/source_registry.yml \
-  --corpus-root /Users/davidnorris/code/adventure-finder-components/md-for-llm-book-content \
-  --afao /Users/davidnorris/code/adventure-finder-components/md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
+  --state /path/to/selected/catalog/PROJECT_STATE.yml \
+  --source-registry /path/to/selected/corpus/source_registry.yml \
+  --corpus-root /path/to/selected/corpus \
+  --afao /path/to/selected/specs/EXISTING_ONTOLOGY.md
+bin/af-frontier doctor
+bin/af-frontier show ADV-0001
 ```
+
+Replace the example locators with existing inputs. Select the actual ontology
+file with `--afao`: the configured short basename above differs from the source
+owner's AFAO basename. No alias, filename scan or automatic newer-version adoption
+is performed; an explicit ontology must still declare its version and is hashed
+in the pack. For historical/frozen work, replace `--state PATH` with
+`--amc /path/to/5e_Adventure_Master_Catalog_X.Y.xlsx`; this is artifact selection,
+not accepted-state resolution.
+
+With `AF_PROJECT_ROOT` configured, `bin/af-frontier build` instead uses the
+configured relative state and ontology authorities, the default corpus beneath
+that root, and its `source_registry.yml`. Each explicit selector overrides only
+its own default.
 
 The production source registry contract is `adventurefinder-source-registry/v0.1`. Explicit mappings may point to one Markdown file or to page-bounded segments. `page_marker_offset`, when present, must be an explicitly signed integer string such as `"+3"` or `"-4"`. If a source has no explicit registry entry, the same deterministic normalized-filename fallback used by `af-cli-scoring-utility` is available and is surfaced with a warning; ambiguity fails closed.
 
