@@ -50,7 +50,7 @@ REPOSITORIES = %w[
 ].freeze
 
 options = {
-  project_root: ENV.fetch("AF_PROJECT_ROOT", AfFrontier::Paths::DEFAULT_PROJECT_ROOT),
+  project_root: ENV["AF_PROJECT_ROOT"],
   output: nil,
   force: false
 }
@@ -63,7 +63,11 @@ OptionParser.new do |parser|
 end.parse!
 
 repo_root = File.expand_path("..", __dir__)
-project_root = File.expand_path(options[:project_root])
+begin
+  project_root = AfFrontier::Paths.project_root(options[:project_root]).to_s
+rescue AfFrontier::ConfigurationError => error
+  abort "ERROR: #{error.message} For this benchmark, use --project-root PATH or AF_PROJECT_ROOT."
+end
 options[:output] ||= File.join(repo_root, "docs", "benchmarks", "amc-6.0-full-corpus.yml")
 output_path = File.expand_path(options[:output])
 
