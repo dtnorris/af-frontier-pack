@@ -8,7 +8,8 @@ class RootConfigurationTest < Minitest::Test
   def setup
     @environment = ENV.to_h.slice("AF_PROJECT_ROOT", "AF_FRONTIER_AMC", "AF_FRONTIER_OUTPUT")
     %w[AF_PROJECT_ROOT AF_FRONTIER_AMC AF_FRONTIER_OUTPUT].each { |key| ENV.delete(key) }
-    @temporary = Dir.mktmpdir("frontier-roots-")
+    # Match the realpaths recorded by authority and source resolvers.
+    @temporary = File.realpath(Dir.mktmpdir("frontier-roots-"))
     @library = create_library("first")
     @output = File.join(@temporary, "pack")
     ENV["AF_FRONTIER_OUTPUT"] = @output

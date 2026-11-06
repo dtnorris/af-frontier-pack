@@ -8,7 +8,8 @@ require "timeout"
 class PackPublicationTest < Minitest::Test
   # Prepares disposable authorities and rows; filesystem/parser errors fail setup.
   def setup
-    @dir = Dir.mktmpdir("pack-publication-")
+    # Keep the ontology fixture identity equal to its recorded manifest path.
+    @dir = File.realpath(Dir.mktmpdir("pack-publication-"))
     @afao = File.join(@dir, "AdventureFinder_Analysis_Ontology_v1.6.1.md")
     File.write(@afao, "# Ontology\n## Version 1.6.1\n")
     @registry = AfFrontier::SourceRegistry.new(path: TestPaths::REGISTRY, corpus_root: TestPaths::CORPUS)
