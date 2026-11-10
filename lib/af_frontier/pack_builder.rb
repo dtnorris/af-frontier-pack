@@ -12,10 +12,13 @@ module AfFrontier
   class PackBuilder
     ACRONYMS = %w[NoS CE EE SIE IE PPSE TC LFS RSMD SO CPA SR DHI FW GMPB GMID PBS GMBS].freeze
 
-    def initialize(amc_path:, source_registry:, afao_path:, output_root: Paths.output_root)
+    # Stores selected input locators and output. public_afao enforces the reviewed
+    # public identity again at consumption; missing AMC raises filesystem errors.
+    def initialize(amc_path:, source_registry:, afao_path:, output_root: Paths.output_root, public_afao: false)
       @amc_path = Pathname.new(amc_path).expand_path.realpath
       @source_registry = source_registry
       @afao_path = Pathname.new(afao_path).expand_path
+      @public_afao = public_afao
       @output_root = Pathname.new(output_root).expand_path
     end
 
@@ -221,17 +224,26 @@ module AfFrontier
       }
     end
 
+    # Returns the consumed ontology's descriptor, retaining historical input behavior.
+    # Public input is revalidated here so a post-resolution edit cannot be rehashed
+    # into validity. Missing/changed authority raises ConfigurationError/ResolutionError.
     def afao_descriptor
       raise ConfigurationError, "AFAO file does not exist: #{@afao_path}" unless @afao_path.file?
 
       realpath = @afao_path.realpath
-      {
+      resolver = AnalysisOntologyResolver.new
+      resolution = @public_afao ? resolver.resolve(public_afao: realpath) : resolver.resolve(explicit_afao: realpath)
+      descriptor = {
         "filename" => realpath.basename.to_s,
         "path" => realpath.to_s,
-        "version" => AnalysisOntologyResolver.detect_version(realpath),
-        "sha256" => Digest::SHA256.file(realpath).hexdigest,
-        "bytes" => realpath.size
+        "version" => resolution.version,
+        "sha256" => resolution.sha256,
+        "bytes" => resolution.bytes
       }
+      if resolution.public_specification
+        descriptor["public_specification"] = resolution.public_specification
+      end
+      descriptor
     end
 
     def extract_version(filename)

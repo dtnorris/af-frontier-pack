@@ -12,7 +12,7 @@ canonical AdventureFinder artifacts
         +-- AMC workbook
         +-- canonical source registry / mappings
         +-- private canonical Markdown corpus
-        +-- pinned current AFAO ontology
+        +-- explicitly selected, pinned public AFAO (or historical input)
         +-- project-state authority
         |
         v
@@ -62,23 +62,30 @@ The production project-state contract is `adventurefinder-project-state/v0.2`. F
 
 ### AFAO resolution
 
-AFAO is a required build authority because `adventures.jsonl` exposes fields whose meanings come from the ontology. A normal build resolves the exact configured production contract rather than leaving `inputs.afao` null or scanning for the numerically newest ontology filename.
+AFAO is a required build authority because `adventures.jsonl` exposes fields whose meanings come from the ontology. A normal build selects the configured public identity without scanning for newer filenames or falling back to private specifications.
 
 Resolution order in v0.1:
 
-1. `--afao PATH`
-2. `config/authority.yml` → `afao`
+1. `--public-afao PATH` for the pinned public identity, **or** `--afao PATH` for deliberate historical/frozen input
+2. `config/authority.yml` → `afao` when neither explicit selector is supplied
 
 The current configured contract is:
 
 ```text
-md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
+af-specification-md/AdventureFinder_Analysis_Ontology_AFAO_v1.6.1.md
 version: 1.6.1
+source revision: 394a44c2c2052ce2eeb6d28cd7647ad8a50acfcf
+sha256: dcfad224ab9517272504a508f935a804032d04a7c812ede10498921ce4585fa1
+bytes: 339101
 ```
 
-The configured path is relative to `AF_PROJECT_ROOT` unless absolute. `af-frontier` verifies that the configured filename matches the configured version and that the file's `## Version` declaration matches as well. Missing or mismatched AFAO authority fails closed.
+The source is [`dtnorris/af-specification-md`](https://github.com/dtnorris/af-specification-md/tree/394a44c2c2052ce2eeb6d28cd7647ad8a50acfcf), bound to its reviewed `documents.json` inventory. `AnalysisOntologyResolver::PUBLIC_AFAO` pins the expected identity independently of supplied bytes. The configured path is relative to `AF_PROJECT_ROOT` unless absolute; `--public-afao` selects an existing file at any explicit location with the exact basename, declared version, digest and size. Only the AFAO file is required, without a runtime Git/network lookup or the other seven documents. The recorded revision identifies the source of the pinned bytes; it does not attest the local checkout's HEAD.
 
-`manifest.json` records the resolved AFAO filename, absolute path, declared version, SHA-256, and byte size.
+Missing, incompatible or changed public inputs fail before replacing `CURRENT`. The builder rechecks the pin at consumption. No alias, private fallback or automatic adoption of a different revision is provided. AFAO 1.6.1 remains **Candidate**, pending targeted GM Preparation Burden 4/5 revalidation; selection does not establish method acceptance or model qualification.
+
+`--afao` retains its existing explicit input behavior: require a declared version and record the supplied bytes without asserting the public pin. It overrides configured authority and remains usable for historical versions and legacy locations. Supplying both selectors is an error. Existing custom historical authority configurations retain their filename/version checks.
+
+`manifest.json` records the resolved AFAO filename, absolute path, declared version, SHA-256 and byte size. Public selections additionally record `inputs.afao.public_specification` with repository, source revision and repository-relative path. Existing pack reads retain their behavior; `doctor` checks recorded input hashes without requiring a build-time project root.
 
 ### Project root
 
@@ -169,16 +176,14 @@ bin/af-frontier build \
   --state /path/to/selected/catalog/PROJECT_STATE.yml \
   --source-registry /path/to/selected/corpus/source_registry.yml \
   --corpus-root /path/to/selected/corpus \
-  --afao /path/to/selected/specs/EXISTING_ONTOLOGY.md
+  --public-afao /path/to/af-specification-md/AdventureFinder_Analysis_Ontology_AFAO_v1.6.1.md
 bin/af-frontier doctor
 bin/af-frontier show ADV-0001
 ```
 
-Replace the example locators with existing inputs. Select the actual ontology
-file with `--afao`: the configured short basename above differs from the source
-owner's AFAO basename. No alias, filename scan or automatic newer-version adoption
-is performed; an explicit ontology must still declare its version and is hashed
-in the pack. For historical/frozen work, replace `--state PATH` with
+Replace the example locators with existing inputs. For deliberate historical
+ontology selection use `--afao /path/to/frozen/ONTOLOGY.md` instead of
+`--public-afao`. For historical/frozen catalog work, replace `--state PATH` with
 `--amc /path/to/5e_Adventure_Master_Catalog_X.Y.xlsx`; this is artifact selection,
 not accepted-state resolution.
 

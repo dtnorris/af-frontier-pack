@@ -2,13 +2,14 @@
 # Paths are resolved relative to AF_PROJECT_ROOT unless absolute.
 #
 # The catalog-head contract lives in af-xlsx-data-sources/PROJECT_STATE.yml.
-# The AFAO contract mirrors the exact ontology consumed by the production scorer;
-# af-frontier never infers ontology authority from filename version ordering.
+# Public AFAO identity is pinned in AnalysisOntologyResolver::PUBLIC_AFAO.
+# Selection records the Candidate method; it does not establish acceptance.
 state_manifests:
   - af-xlsx-data-sources/PROJECT_STATE.yml
 role: catalog_head
 schema_version: adventurefinder-project-state/v0.2
 
 afao:
-  path: md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md
+  selection: public
+  path: af-specification-md/AdventureFinder_Analysis_Ontology_AFAO_v1.6.1.md
   version: "1.6.1"
