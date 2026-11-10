@@ -61,9 +61,9 @@ Selection order is `--amc`, `AF_FRONTIER_AMC`, `--state`, then configured state 
 
 ## AFAO resolution
 
-Explicit `--afao` wins. Otherwise resolve the exact `afao` contract from `config/authority.yml`, relative to `AF_PROJECT_ROOT` unless absolute. The current production contract is `md-specification-files/AdventureFinder_Analysis_Ontology_v1.6.1.md`, version `1.6.1`, matching the production scorer.
+Select the pinned public identity with `--public-afao PATH`, or deliberate historical input with `--afao PATH`. Supplying both is an error. Otherwise resolve the exact `afao` contract from `config/authority.yml`, relative to `AF_PROJECT_ROOT` unless absolute. The default selects the public `AdventureFinder_Analysis_Ontology_AFAO_v1.6.1.md` at source revision `394a44c2c2052ce2eeb6d28cd7647ad8a50acfcf` of `dtnorris/af-specification-md`.
 
-The resolver verifies configured filename/version consistency and the file's `## Version` declaration. Missing or mismatched authority fails closed. Every generated manifest records AFAO filename, path, version, SHA-256, and byte size; `inputs.afao` is not optional.
+Public selection verifies basename, declared version and independently pinned digest/size both at resolution and builder consumption. Only AFAO is required; missing or mismatched input fails before publication without private fallback. Historical explicit inputs retain their version detection and recorded-byte behavior. Every manifest records AFAO filename, path, version, SHA-256 and byte size; public selections add source repository/revision/relative path. See [README](../README.md#afao-resolution) for the exact identity and compatibility contract. AFAO 1.6.1 retains its Candidate status; consumption does not establish acceptance or qualification.
 
 AFAO authority is explicit and pinned. `af-frontier` must not discover ontology authority by sorting filenames or selecting a numerically newer version.
 

@@ -36,10 +36,10 @@ class RootConfigurationTest < Minitest::Test
     end
   end
 
-  # A deliberately configured root retains relative defaults and registry placement.
+  # A configured root retains relative catalog/corpus defaults with historical AFAO.
   def test_configured_layout_and_relative_explicit_operands
     ENV["AF_PROJECT_ROOT"] = @library
-    assert_success("build")
+    assert_success("build", "--afao", ontology)
     assert_equal catalog, current_pack.manifest.dig("inputs", "amc", "path")
     ENV.delete("AF_PROJECT_ROOT")
     Dir.chdir(@library) do

@@ -46,6 +46,7 @@ module AfFrontier
         o.on("--source-registry PATH") { |v| opts[:source_registry] = v }
         o.on("--corpus-root PATH") { |v| opts[:corpus_root] = v }
         o.on("--afao PATH") { |v| opts[:afao] = v }
+        o.on("--public-afao PATH") { |v| opts[:public_afao] = v }
         o.on("--output PATH") { |v| opts[:output] = v }
       end
       parser.parse!(@argv)
@@ -65,12 +66,15 @@ module AfFrontier
       @out.puts("Authority: #{resolution.source}")
       @out.puts
 
-      afao_resolution = AnalysisOntologyResolver.new.resolve(explicit_afao: opts[:afao])
-      @out.puts(opts[:afao] ? "Using explicit AFAO:" : "Resolved AFAO authority:")
+      afao_resolution = AnalysisOntologyResolver.new.resolve(explicit_afao: opts[:afao], public_afao: opts[:public_afao])
+      @out.puts(opts[:afao] || opts[:public_afao] ? "Using explicit AFAO:" : "Resolved AFAO authority:")
       @out.puts("  #{afao_resolution.path}")
       @out.puts("  version: #{afao_resolution.version}")
       @out.puts("  sha256: #{afao_resolution.sha256}")
       @out.puts("Authority: #{afao_resolution.source}")
+      if afao_resolution.public_specification
+        @out.puts("Public specification revision: #{afao_resolution.public_specification.fetch('revision')}")
+      end
       @out.puts
 
       opts[:corpus_root] ||= Paths.project_root.join("md-for-llm-book-content").to_s
@@ -84,6 +88,7 @@ module AfFrontier
         amc_path: resolution.path,
         source_registry: registry,
         afao_path: afao_resolution.path,
+        public_afao: !afao_resolution.public_specification.nil?,
         output_root: opts[:output]
       ).build
 
@@ -204,7 +209,8 @@ module AfFrontier
 
         Build inputs:
           --state PATH (catalog_head), or --amc PATH / AF_FRONTIER_AMC (frozen artifact)
-          --afao PATH --source-registry PATH --corpus-root PATH --output PATH
+          --public-afao PATH (pinned public identity), or --afao PATH (historical explicit input)
+          --source-registry PATH --corpus-root PATH --output PATH
           AF_PROJECT_ROOT is required only for omitted relative authority/corpus defaults.
           No project root is discovered. Pack reads need only AF_FRONTIER_OUTPUT.
 

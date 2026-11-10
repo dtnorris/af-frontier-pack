@@ -8,8 +8,19 @@ module AfFrontier
   class AnalysisOntologyResolver
     VERSION_HEADING_RE = /^##\s+Version\s+([^\s]+)\s*$/i
 
+    # Reviewed SP-03 inventory identity, independent of the supplied file's bytes.
+    # Only this AFAO is needed; its Candidate status does not imply acceptance.
+    PUBLIC_AFAO = {
+      "repository" => "https://github.com/dtnorris/af-specification-md",
+      "revision" => "394a44c2c2052ce2eeb6d28cd7647ad8a50acfcf",
+      "path" => "AdventureFinder_Analysis_Ontology_AFAO_v1.6.1.md",
+      "version" => "1.6.1",
+      "sha256" => "dcfad224ab9517272504a508f935a804032d04a7c812ede10498921ce4585fa1",
+      "bytes" => 339101
+    }.freeze
+
     Resolution = Struct.new(
-      :path, :source, :version, :sha256, :bytes, keyword_init: true
+      :path, :source, :version, :sha256, :bytes, :public_specification, keyword_init: true
     )
 
     def self.detect_version(path)
@@ -30,10 +41,15 @@ module AfFrontier
       @authority_config = Pathname.new(authority_config).expand_path
     end
 
-    # Returns the explicit ontology or exact configured authority. Explicit paths
-    # are cwd-relative; invalid authorities raise ResolutionError/ConfigurationError.
-    def resolve(explicit_afao: nil)
+    # Returns historical explicit input or the selected configured/public authority.
+    # Explicit paths are cwd-relative. Public selections enforce the reviewed pin;
+    # conflicting, missing or invalid inputs raise ResolutionError/ConfigurationError.
+    def resolve(explicit_afao: nil, public_afao: nil)
+      if !explicit_afao.nil? && !public_afao.nil?
+        raise ConfigurationError, "Select only one of --afao and --public-afao"
+      end
       return resolution_for(explicit_afao, "--afao") unless explicit_afao.nil?
+      return public_resolution(public_afao, "--public-afao") unless public_afao.nil?
 
       config = load_authority_config
       entry = config["afao"]
@@ -49,6 +65,12 @@ module AfFrontier
 
       path = Pathname.new(configured_path)
       path = Paths.project_root(@project_root).join(path) unless path.absolute?
+      if entry["selection"] == "public"
+        unless expected_version == PUBLIC_AFAO.fetch("version")
+          raise ResolutionError, "Configured public AFAO version must be #{PUBLIC_AFAO.fetch('version')}"
+        end
+        return public_resolution(path, @authority_config.realpath.to_s)
+      end
       resolution = resolution_for(path, @authority_config.realpath.to_s)
 
       expected_filename = "AdventureFinder_Analysis_Ontology_v#{expected_version}.md"
@@ -68,6 +90,24 @@ module AfFrontier
     end
 
     private
+
+    # Validates a public locator against the fixed source revision's filename,
+    # declared version, digest and size; returns provenance or raises ResolutionError.
+    def public_resolution(value, source)
+      resolution = resolution_for(value, source)
+      expected = PUBLIC_AFAO
+      unless resolution.path.basename.to_s == expected.fetch("path")
+        raise ResolutionError, "Public AFAO filename mismatch: expected #{expected.fetch('path')}"
+      end
+      unless resolution.version == expected.fetch("version")
+        raise ResolutionError, "Public AFAO version mismatch: expected #{expected.fetch('version')}, file declares #{resolution.version}"
+      end
+      unless resolution.sha256 == expected.fetch("sha256") && resolution.bytes == expected.fetch("bytes")
+        raise ResolutionError, "Public AFAO content mismatch for #{expected.fetch('revision')}: #{resolution.path}"
+      end
+      resolution.public_specification = expected.slice("repository", "revision", "path")
+      resolution
+    end
 
     def resolution_for(value, source)
       path = Pathname.new(value).expand_path
