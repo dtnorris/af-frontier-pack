@@ -1,19 +1,24 @@
 # frozen_string_literal: true
 
-module AfFrontier
-  class SourceResolver
-    PRINTED_PAGE_MARKER = /^\s*(?:>\s*)*<!--\s*Printed\s+Page\s+(\d+)\s*-->\s*$/i
-    FALLBACK_PAGE_MARKER = /^\s*(?:>\s*)*<!--\s*(?:PDF\s+Page|PAGE:)\s*(\d+)\s*-->\s*$/i
+require_relative "source_markdown_owner"
 
+module AfFrontier
+  # Reads retained pack locators and renders their canonical Markdown for display.
+  class SourceResolver
+    # Bind a pack reader. The default pack opens the configured output directory.
     def initialize(pack: Pack.new)
       @pack = pack
     end
 
+    # Return the stored locator for the adventure. Pack lookup errors propagate.
     def locator(adventure_id)
       @pack.fetch(adventure_id).fetch("source_locator")
     end
 
+    # Return the strict page slice rendered with one final newline. Missing
+    # owner selection or unreadable boundaries raise the corresponding pack error.
     def emit(adventure_id)
+      owner = SourceMarkdownOwner.load!
       locator = locator(adventure_id)
       path = locator["path"]
       offset = Integer(locator.fetch("page_marker_offset", 0))
@@ -24,54 +29,20 @@ module AfFrontier
       raise ResolutionError, "Cannot emit source for #{adventure_id}: missing start/end page" unless start_page && end_page
       raise ResolutionError, "Cannot emit source for #{adventure_id}: start page exceeds end page" if start_page > end_page
 
-      text = File.read(path, encoding: "UTF-8")
-      markers = page_markers(text)
-      raise ResolutionError, "No supported page markers found in #{path}" if markers.empty?
-
-      marker_start_page = start_page + offset
-      marker_end_page = end_page + offset
-      start_marker = markers.find { |marker| marker[:page] == marker_start_page }
-      end_marker_index = markers.index { |marker| marker[:page] == marker_end_page }
-
-      unless start_marker && end_marker_index
-        missing = []
-        missing << marker_start_page unless start_marker
-        missing << marker_end_page unless end_marker_index
-        raise ResolutionError,
-              "Required source page marker(s) not found for #{adventure_id}: #{missing.uniq.join(', ')} " \
-              "(canonical #{start_page}-#{end_page}, page_marker_offset #{format('%+d', offset)})"
-      end
-
-      start_offset = start_marker.fetch(:offset)
-      following = markers[end_marker_index + 1]
-      end_offset = following ? following.fetch(:offset) : text.bytesize
-      if end_offset <= start_offset
-        raise ResolutionError,
-              "Page marker ordering is inconsistent for #{adventure_id}: #{marker_start_page}-#{marker_end_page}"
-      end
-
-      text.byteslice(start_offset...end_offset).rstrip + "\n"
+      raw_text(owner, path, start_page:, end_page:, offset:).rstrip + "\n"
     end
 
     private
 
-    def page_markers(text)
-      printed = markers_for(text, PRINTED_PAGE_MARKER)
-      printed.empty? ? markers_for(text, FALLBACK_PAGE_MARKER) : printed
+    # Return the owner's raw UTF-8 slice for the locator's canonical range.
+    # Boundary or source refusals become Frontier Pack resolution errors.
+    def raw_text(owner, path, start_page:, end_page:, offset:)
+      owner::SourceDocument.new(path).extract(start_page:, end_page:, page_marker_offset: offset).text
+    rescue AFSourceMD::SourceBoundaryError, AFSourceMD::SourceResolutionError => error
+      raise ResolutionError, error.message
     end
 
-    def markers_for(text, pattern)
-      markers = []
-      cursor = 0
-      text.each_line do |line|
-        if (match = line.match(pattern))
-          markers << { page: match[1].to_i, offset: cursor }
-        end
-        cursor += line.bytesize
-      end
-      markers
-    end
-
+    # Coerce a retained catalog page value to Integer, or nil if unusable.
     def integer_or_nil(value)
       return nil if value.nil? || value.to_s.strip.empty?
       Integer(value)
