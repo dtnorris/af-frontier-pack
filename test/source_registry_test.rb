@@ -74,4 +74,24 @@ class SourceRegistryTest < Minitest::Test
       assert_includes error.message, "explicitly signed"
     end
   end
+
+  # Unused mappings must still be validated when the pack opens its registry.
+  def test_rejects_an_unselected_mapping_with_a_blank_file
+    Dir.mktmpdir do |dir|
+      registry_path = File.join(dir, "source_registry.yml")
+      File.write(registry_path, <<~YAML)
+        schema_version: adventurefinder-source-registry/v0.1
+        sources:
+          Book One:
+            file: existing.md
+          Unselected Book:
+            file: "  "
+      YAML
+
+      error = assert_raises(AfFrontier::ConfigurationError) do
+        AfFrontier::SourceRegistry.new(path: registry_path, corpus_root: dir)
+      end
+      assert_includes error.message, "Unselected Book"
+    end
+  end
 end

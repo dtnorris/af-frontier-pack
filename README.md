@@ -192,7 +192,11 @@ configured relative state and ontology authorities, the default corpus beneath
 that root, and its `source_registry.yml`. Each explicit selector overrides only
 its own default.
 
-The production source registry contract is `adventurefinder-source-registry/v0.1`. Explicit mappings may point to one Markdown file or to page-bounded segments. `page_marker_offset`, when present, must be an explicitly signed integer string such as `"+3"` or `"-4"`. If a source has no explicit registry entry, the same deterministic normalized-filename fallback used by `af-cli-scoring-utility` is available and is surfaced with a warning; ambiguity fails closed.
+The production source registry contract is `adventurefinder-source-registry/v0.1`. Explicit mappings may point to one Markdown file or to page-bounded segments. `page_marker_offset`, when present, must be an explicitly signed integer string such as `"+3"` or `"-4"`. If a source has no explicit registry entry, the same deterministic normalized-filename fallback used by the public scorer is available and is surfaced with a warning. Ambiguity fails closed.
+
+Builds and source-bearing output use [af-source-md](https://github.com/dtnorris/af-source-md/tree/a44019961e822b19a727e3562c2ecda4cfe0a7bd) for registry resolution and raw page slicing. Set `AF_SOURCE_MD_ROOT` to the absolute path of that owner checkout, or make `af_source_md` available on Ruby's load path when the selector is absent. An invalid explicit selection refuses the operation. Keep the owner selection fixed for the life of the process.
+
+Frontier Pack validates all registry entry shapes at build time and keeps its existing locator fields, including canonical segment bounds. `source --emit` and source-bearing bundles require exact page boundaries, strip trailing whitespace from the raw slice, and append one newline. Metadata-only commands can read existing packs without loading the owner.
 
 ## Deterministic filtering
 
@@ -275,7 +279,11 @@ See [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md) and [`docs/BENCHMARK.md`](doc
 
 ```bash
 bundle install
-bundle exec rake
+AF_SOURCE_MD_ROOT=/absolute/path/to/af-source-md bundle exec rake
 ```
+
+For reproducible tests and CI, use the public `dtnorris/af-source-md` checkout at
+`a44019961e822b19a727e3562c2ecda4cfe0a7bd` with Ruby 3.2 or newer. Provision the
+checkout before running the suite. Tests use that same owner selection as `build`.
 
 The test fixture includes a tiny `.xlsx`, production-schema source registry, and safe Markdown corpus so the core v0.1 flow can be exercised without copying any private AdventureFinder source content.
