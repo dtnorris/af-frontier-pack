@@ -12,11 +12,13 @@ module AfFrontier
   class PackBuilder
     ACRONYMS = %w[NoS CE EE SIE IE PPSE TC LFS RSMD SO CPA SR DHI FW GMPB GMID PBS GMBS].freeze
 
-    # Stores selected input locators and output. public_afao enforces the reviewed
-    # public identity again at consumption; missing AMC raises filesystem errors.
-    def initialize(amc_path:, source_registry:, afao_path:, output_root: Paths.output_root, public_afao: false)
+    # Store selected inputs and output, with an optional private source
+    # declaration. Missing AMC raises filesystem errors.
+    def initialize(amc_path:, source_registry:, afao_path:, output_root: Paths.output_root, public_afao: false,
+                   reviewed_source_path: nil)
       @amc_path = Pathname.new(amc_path).expand_path.realpath
       @source_registry = source_registry
+      @reviewed_source_path = reviewed_source_path
       @afao_path = Pathname.new(afao_path).expand_path
       @public_afao = public_afao
       @output_root = Pathname.new(output_root).expand_path
@@ -25,7 +27,11 @@ module AfFrontier
     # Returns the deterministic manifest for the supplied authorities. Validation or
     # filesystem errors before CURRENT replacement leave the previous pack selected.
     def build
+      review = ReviewedSource.new(@reviewed_source_path) if @reviewed_source_path
       rows = XlsxCatalogReader.new(@amc_path).rows
+      if review && rows.none? { |row| row.fetch("ADV - ID").to_s.strip == review.adventure_id }
+        raise ResolutionError, "Reviewed source Adventure ID not found in catalog: #{review.adventure_id}"
+      end
       seen = {}
       unresolved_sources = []
 
@@ -37,13 +43,10 @@ module AfFrontier
         source_book = row["Source Book"].to_s.strip
         start_page = integer_or_nil(row["Start Page"])
         end_page = integer_or_nil(row["End Page"])
-        source_resolution = @source_registry.resolve(
-          source_book,
-          start_page: start_page,
-          end_page: end_page
-        )
+        reviewed_locator = review.locator_for(row, registry: @source_registry) if review&.adventure_id == adv_id
+        source_resolution = @source_registry.resolve(source_book, start_page:, end_page:) unless reviewed_locator
         unresolved_sources << source_book unless source_resolution
-        adventure_record(row, source_resolution)
+        adventure_record(row, source_resolution, reviewed_locator:)
       end.sort_by { |record| record.fetch("adventure_id") }
 
       source_records = build_source_records(adventures)
@@ -87,7 +90,9 @@ module AfFrontier
       end
     end
 
-    def adventure_record(row, source_resolution)
+    # Return the catalog row with its ordinary or reviewed locator. The row
+    # must carry the Adventure ID supplied by the catalog reader.
+    def adventure_record(row, source_resolution, reviewed_locator:)
       assessments = {
         "NoS" => scalar(row["Number of Sessions"]),
         "LSLE" => {
@@ -134,7 +139,7 @@ module AfFrontier
         # some canonical parent edges, but there is not yet a consolidated current-state
         # parentage authority spanning the full AMC.
         "parentage" => nil,
-        "source_locator" => source_locator(source_book, start_page, end_page, source_resolution)
+        "source_locator" => reviewed_locator || source_locator(source_book, start_page, end_page, source_resolution)
       }
     end
 
@@ -152,16 +157,18 @@ module AfFrontier
       }.compact
     end
 
+    # Index the pack's ordinary and reviewed file references by catalog source.
+    # Reading an ordinary locator's source bytes can raise filesystem errors.
     def build_source_records(adventures)
       adventures.group_by { |adventure| adventure.dig("source", "source_id") }
         .sort_by { |source_id, _| source_id.to_s }
         .map do |source_id, source_adventures|
           publishers = source_adventures.filter_map { |adventure| adventure.dig("source", "publisher") }.uniq.sort
-          locators = source_adventures.filter_map do |adventure|
+          locators = source_adventures.flat_map do |adventure|
             locator = adventure.fetch("source_locator")
-            next unless locator["path"]
+            next locator.fetch("source_references", []) unless locator["path"]
 
-            {
+            [{
               "path" => locator.fetch("path"),
               "strategy" => locator["strategy"],
               "warnings" => locator["warnings"] || [],
@@ -169,7 +176,7 @@ module AfFrontier
               "segment_start_page" => locator["segment_start_page"],
               "segment_end_page" => locator["segment_end_page"],
               "content_sha256" => Digest::SHA256.file(locator.fetch("path")).hexdigest
-            }.compact
+            }.compact]
           end.uniq { |locator| [locator["path"], locator["page_marker_offset"], locator["segment_start_page"], locator["segment_end_page"]] }
             .sort_by { |locator| [locator["segment_start_page"] || -1, locator["path"]] }
 

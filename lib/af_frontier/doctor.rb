@@ -4,6 +4,7 @@ require "digest"
 require "set"
 
 module AfFrontier
+  # Checks a pack's retained catalog, source references and input identities.
   class Doctor
     ORDINAL = %w[CE EE SIE IE PPSE TC LFS RSMD SO CPA SR DHI FW GMPB GMID PBS GMBS].freeze
 
@@ -11,6 +12,7 @@ module AfFrontier
       @pack = pack
     end
 
+    # Return true for a consistent pack or raise IntegrityError with the failures.
     def check
       errors = []
       manifest = @pack.manifest
@@ -40,6 +42,10 @@ module AfFrontier
         locator = adventure["source_locator"] || {}
         if locator["path"] && !File.file?(locator["path"])
           errors << "#{id} source file missing: #{locator['path']}"
+        end
+        if locator["strategy"] == ReviewedSource::STRATEGY
+          source = sources.find { |record| record["source_id"] == locator["source_id"] }
+          validate_reviewed_locator(errors, adventure, locator, source)
         end
       end
 
@@ -77,6 +83,23 @@ module AfFrontier
     end
 
     private
+
+    # Append an error for a reviewed locator that advertises an excerpt or
+    # whose two digest-bearing references cannot be verified by the source index.
+    def validate_reviewed_locator(errors, adventure, locator, source)
+      references = locator["source_references"]
+      indexed = Array(source && source["markdown_locators"])
+      catalog_source = adventure["source"]
+      identity = %w[source_id start_page end_page]
+      valid = locator["exact_excerpt"] == false && !locator.key?("path") &&
+              catalog_source.is_a?(Hash) &&
+              locator.values_at(*identity).eql?(catalog_source.values_at(*identity)) &&
+              references.is_a?(Array) && references.length == 2 &&
+              references.all? { |reference| reference.is_a?(Hash) && indexed.include?(reference) &&
+                                             ReviewedSource::SHA256.match?(reference["content_sha256"].to_s) } &&
+              references.map { |reference| reference["path"] }.uniq.length == 2
+      errors << "#{adventure['adventure_id']} invalid reviewed source references" unless valid
+    end
 
     def validate_input_hash(errors, manifest, key, label)
       descriptor = manifest.dig("inputs", key)

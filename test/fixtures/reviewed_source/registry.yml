@@ -1,0 +1,14 @@
+schema_version: adventurefinder-source-registry/v0.1
+sources:
+  Book One:
+    file: Book_One_LLM_Edition.md
+  Book Two:
+    segments:
+      - start_page: 19
+        end_page: 20
+        file: volume-one.md
+        page_marker_offset: "+3"
+      - start_page: 23
+        end_page: 24
+        file: volume-two.md
+        page_marker_offset: "+5"

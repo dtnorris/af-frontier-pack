@@ -1,0 +1,34 @@
+env:
+  BUNDLE_FROZEN: "true"
+
+steps:
+  - label: "Full native suite"
+    key: "native"
+    agents:
+      queue: "act-macos"
+    timeout_in_minutes: 10
+    command: |
+      set -euo pipefail
+      unset AF_PROJECT_ROOT AF_FRONTIER_AMC AF_FRONTIER_OUTPUT
+      ruby --version
+      bundle --version
+      bundle install
+      bundle exec rake
+
+  - label: "Project-state v0.2 conformance"
+    key: "project-state"
+    agents:
+      queue: "act-macos"
+    timeout_in_minutes: 10
+    command: |
+      set -euo pipefail
+      unset AF_PROJECT_ROOT AF_FRONTIER_AMC AF_FRONTIER_OUTPUT
+      contract_checkout="tmp/project-state-$$BUILDKITE_JOB_ID"
+      git init "$$contract_checkout"
+      git -C "$$contract_checkout" remote add origin https://github.com/dtnorris/af-xlsx-files.git
+      git -C "$$contract_checkout" sparse-checkout init --no-cone
+      git -C "$$contract_checkout" sparse-checkout set --no-cone '/contracts/project-state/v0.2/'
+      git -C "$$contract_checkout" fetch --no-tags --filter=blob:none --depth=1 origin 81fcb78c27e64ef0c03b653bc7bd58ec7ab912c3
+      git -C "$$contract_checkout" checkout --detach 81fcb78c27e64ef0c03b653bc7bd58ec7ab912c3
+      git -C "$$contract_checkout" rev-parse HEAD
+      ruby bin/check-project-state-contract --suite "$$contract_checkout/contracts/project-state/v0.2"

@@ -198,6 +198,54 @@ Builds and source-bearing output use [af-source-md](https://github.com/dtnorris/
 
 Frontier Pack validates all registry entry shapes at build time and keeps its existing locator fields, including canonical segment bounds. `source --emit` and source-bearing bundles require exact page boundaries, strip trailing whitespace from the raw slice, and append one newline. Metadata-only commands can read existing packs without loading the owner.
 
+### Reviewed two-volume source references
+
+If a catalog entry was assessed using two specific volumes together, and its
+canonical range intersects two separate registry segments, the operator can
+retain both reviewed references with `--reviewed-source PATH`. Use a private
+JSON file for one catalog entry. Match the catalog ID, adventure title, source
+book and integer page bounds. Use the exact `file` values from the selected
+registry as keys and the lowercase SHA-256 of each reviewed file as values
+(`shasum -a 256`). For example, the synthetic campaign fixture uses
+
+```json
+{
+  "adventure_id": "ADV-0004",
+  "adventure_title": "Example Campaign",
+  "source_book": "Book Two",
+  "start_page": 17,
+  "end_page": 25,
+  "files": {
+    "volume-one.md": "a3b15cd32588467aff1b2eea74296bae66675d2b54a96189301063aa85055203",
+    "volume-two.md": "1067b2ba6072a206d650a94381a8209707542558476e47f78153e068d09fc5c2"
+  }
+}
+```
+
+```bash
+export AF_FRONTIER_OUTPUT=/path/to/selected/frontier-pack
+bin/af-frontier build \
+  --state /path/to/selected/catalog/PROJECT_STATE.yml \
+  --source-registry /path/to/selected/corpus/source_registry.yml \
+  --corpus-root /path/to/selected/corpus \
+  --public-afao /path/to/af-specification-md/AdventureFinder_Analysis_Ontology_AFAO_v1.6.1.md \
+  --reviewed-source /path/to/private/review.json
+bin/af-frontier doctor
+```
+
+Frontier checks for exactly two nonoverlapping registry segments intersecting
+the catalog range, two distinct files and matching digests before publishing.
+The locator lists both files, digests and registry bounds under
+`source_references`. The bounds describe the registry mapping and may leave
+gaps in the catalog span. The catalog values are preserved, and the locator's
+`exact_excerpt: false` reports that there is no verified single-file excerpt
+for the parent. `show`, `select`, `source` metadata and metadata-only bundles can
+include the entry. `source --emit` and `bundle --with-source` refuse its exact
+excerpt. Each child keeps its own ordinary locator. Counts of resolved
+adventures still measure single-file locators, so the parent contributes to
+`source_unresolved`. The declaration is a build input. `doctor` checks the
+retained references against the pack's source index and the files on disk.
+
 ## Deterministic filtering
 
 `select` is deliberately boring. v0.1 supports only repeated AND-ed comparisons:

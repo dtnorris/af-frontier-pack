@@ -62,5 +62,11 @@ module AfFrontier
 
       @reader.resolve(Request.new(title, start_page, end_page))
     end
+
+    # Return file names and locators for two nonoverlapping segments intersecting
+    # the reviewed range. Incompatible or ambiguous mappings raise ResolutionError.
+    def reviewed_segments(book_title, start_page:, end_page:)
+      @reader.reviewed_segments(Request.new(book_title, start_page, end_page))
+    end
   end
 end

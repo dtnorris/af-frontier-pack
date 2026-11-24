@@ -71,6 +71,8 @@ AFAO authority is explicit and pinned. `af-frontier` must not discover ontology 
 
 Mirror AdventureFinder's production source contract: exact registry mappings first (including segmented mappings and signed `page_marker_offset`), then deterministic normalized-filename fallback when no explicit mapping exists. For extraction, prefer `Printed Page` markers when present; otherwise use `PDF Page` / `PAGE:` markers. Exact start/end markers are required.
 
+An explicit private [reviewed source declaration](../README.md#reviewed-two-volume-source-references) can retain two verified file references for one catalog entry with no single containing segment. The entry keeps its full catalog span and carries an excerpt limitation. Each reference records registry bounds, which can leave pages of that span unmapped. Exact excerpts and source-bearing bundles refuse the entry.
+
 Canonical parentage remains `null` in v0.1 because current parent edges are preserved in ingestion provenance but are not yet exposed as one consolidated current-state catalog authority.
 
 ## Critical null rule
