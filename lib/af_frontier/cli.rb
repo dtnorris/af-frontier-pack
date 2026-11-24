@@ -77,7 +77,7 @@ module AfFrontier
       end
       @out.puts
 
-      opts[:corpus_root] ||= Paths.project_root.join("md-for-llm-book-content").to_s
+      opts[:corpus_root] ||= Paths.project_root.join("af-source-md-data").to_s
       opts[:source_registry] ||= File.join(opts[:corpus_root], "source_registry.yml")
       unless File.file?(opts[:source_registry])
         raise ConfigurationError, "Source registry not found. Supply --source-registry PATH (default tried: #{opts[:source_registry]})"

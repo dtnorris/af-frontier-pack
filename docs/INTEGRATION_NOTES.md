@@ -38,7 +38,7 @@ Explicit AMC selection remains a deliberate override for historical/frozen work.
 The production source-mapping authority is:
 
 ```text
-md-for-llm-book-content/source_registry.yml
+af-source-md-data/source_registry.yml
 ```
 
 with schema:
