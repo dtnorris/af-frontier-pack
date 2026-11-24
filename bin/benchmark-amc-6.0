@@ -46,7 +46,7 @@ REPOSITORIES = %w[
   af-frontier-pack
   af-xlsx-data-sources
   md-specification-files
-  md-for-llm-book-content
+  af-source-md-data
 ].freeze
 
 options = {
@@ -78,7 +78,7 @@ end
 amc_path = File.join(project_root, "af-xlsx-data-sources", EXPECTED_AMC.fetch("filename"))
 project_state_path = File.join(project_root, "af-xlsx-data-sources", "PROJECT_STATE.yml")
 afao_path = File.join(project_root, "md-specification-files", "AdventureFinder_Analysis_Ontology_v1.6.1.md")
-corpus_root = File.join(project_root, "md-for-llm-book-content")
+corpus_root = File.join(project_root, "af-source-md-data")
 source_registry_path = File.join(corpus_root, "source_registry.yml")
 
 required = [amc_path, project_state_path, afao_path, source_registry_path]

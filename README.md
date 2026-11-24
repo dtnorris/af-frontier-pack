@@ -94,7 +94,7 @@ There is no implicit project root. With fully selected build inputs, leave
 discovers a library from cwd, home, or a developer's personal directories.
 
 Set `AF_PROJECT_ROOT` only when using relative paths from `config/authority.yml`
-or the default corpus `md-for-llm-book-content` beneath that root:
+or the default corpus `af-source-md-data` beneath that root:
 
 ```bash
 export AF_PROJECT_ROOT=/path/to/existing/components

@@ -151,7 +151,7 @@ class RootConfigurationTest < Minitest::Test
   def create_library(name)
     root = File.join(@temporary, name)
     catalog_root = File.join(root, "af-xlsx-data-sources")
-    corpus = File.join(root, "md-for-llm-book-content")
+    corpus = File.join(root, "af-source-md-data")
     specification = File.join(root, "md-specification-files")
     FileUtils.mkdir_p([catalog_root, specification])
     FileUtils.cp(TestPaths::AMC, catalog_root)
@@ -169,8 +169,8 @@ class RootConfigurationTest < Minitest::Test
   # Returns explicit CLI build arguments for a selected mechanical library.
   def build_arguments(root = @library)
     ["build", "--state", state(root), "--afao", ontology(root),
-     "--source-registry", File.join(root, "md-for-llm-book-content/source_registry.yml"),
-     "--corpus-root", File.join(root, "md-for-llm-book-content"), "--output", @output]
+     "--source-registry", File.join(root, "af-source-md-data/source_registry.yml"),
+     "--corpus-root", File.join(root, "af-source-md-data"), "--output", @output]
   end
 
   # Returns the selected state locator without reading it.
