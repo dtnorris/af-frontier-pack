@@ -15,7 +15,7 @@ class CanonicalHeadResolverTest < Minitest::Test
 
   def test_resolves_and_verifies_catalog_head_from_project_state
     Dir.mktmpdir do |dir|
-      xlsx_root = File.join(dir, "af-xlsx-data-sources")
+      xlsx_root = File.join(dir, "af-xlsx-files-data")
       FileUtils.mkdir_p(xlsx_root)
       catalog = File.join(xlsx_root, File.basename(TestPaths::AMC))
       FileUtils.cp(TestPaths::AMC, catalog)

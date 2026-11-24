@@ -107,7 +107,7 @@ class RootConfigurationTest < Minitest::Test
     second_output = File.join(@temporary, "second-pack")
     assert_success(*build_arguments(second), "--output", second_output)
     other_pack = AfFrontier::Pack.new(root: second_output)
-    assert_equal File.join(second, "af-xlsx-data-sources", File.basename(TestPaths::AMC)),
+    assert_equal File.join(second, "af-xlsx-files-data", File.basename(TestPaths::AMC)),
                  other_pack.manifest.dig("inputs", "amc", "path")
     other_pack.adventures.each do |record|
       assert record.dig("source_locator", "path").start_with?(second + "/")
@@ -150,7 +150,7 @@ class RootConfigurationTest < Minitest::Test
   # Copies safe fixture bytes into a conventional selected layout; returns its root.
   def create_library(name)
     root = File.join(@temporary, name)
-    catalog_root = File.join(root, "af-xlsx-data-sources")
+    catalog_root = File.join(root, "af-xlsx-files-data")
     corpus = File.join(root, "af-source-md-data")
     specification = File.join(root, "md-specification-files")
     FileUtils.mkdir_p([catalog_root, specification])
@@ -175,12 +175,12 @@ class RootConfigurationTest < Minitest::Test
 
   # Returns the selected state locator without reading it.
   def state(root = @library)
-    File.join(root, "af-xlsx-data-sources/PROJECT_STATE.yml")
+    File.join(root, "af-xlsx-files-data/PROJECT_STATE.yml")
   end
 
   # Returns the selected catalog locator without reading it.
   def catalog
-    File.join(@library, "af-xlsx-data-sources", File.basename(TestPaths::AMC))
+    File.join(@library, "af-xlsx-files-data", File.basename(TestPaths::AMC))
   end
 
   # Returns the selected fixture ontology locator without reading it.
