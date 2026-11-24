@@ -70,7 +70,7 @@ Source Book:
       file: Part_Two_LLM_Edition.md
 ```
 
-Segment selection uses the AMC canonical start/end page range and requires it to be fully contained by exactly one segment. Configured missing files, malformed mappings, invalid offsets, gaps, and ambiguity fail closed.
+Single-file segment selection uses the AMC canonical start/end page range and requires it to be fully contained by exactly one segment. Configured missing files, malformed mappings, invalid offsets, gaps, and ambiguity fail closed. For a reviewed entry spanning two volumes, Frontier can retain metadata references from a [private declaration](../README.md#reviewed-two-volume-source-references). Those references keep their registry bounds and confer no exact excerpt for the entry.
 
 For sources without an explicit registry entry, v0.1 mirrors the scorer's deterministic normalized-filename fallback. A unique match is permitted and carries `SOURCE_RESOLVED_BY_FILENAME`; zero matches remain explicitly unresolved; multiple matches fail closed.
 

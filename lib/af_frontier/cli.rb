@@ -44,6 +44,7 @@ module AfFrontier
         o.on("--amc PATH") { |v| opts[:amc] = v }
         o.on("--state PATH") { |v| opts[:state] = v }
         o.on("--source-registry PATH") { |v| opts[:source_registry] = v }
+        o.on("--reviewed-source PATH") { |v| opts[:reviewed_source] = v }
         o.on("--corpus-root PATH") { |v| opts[:corpus_root] = v }
         o.on("--afao PATH") { |v| opts[:afao] = v }
         o.on("--public-afao PATH") { |v| opts[:public_afao] = v }
@@ -87,6 +88,7 @@ module AfFrontier
       manifest = PackBuilder.new(
         amc_path: resolution.path,
         source_registry: registry,
+        reviewed_source_path: opts[:reviewed_source],
         afao_path: afao_resolution.path,
         public_afao: !afao_resolution.public_specification.nil?,
         output_root: opts[:output]
@@ -211,6 +213,7 @@ module AfFrontier
           --state PATH (catalog_head), or --amc PATH / AF_FRONTIER_AMC (frozen artifact)
           --public-afao PATH (pinned public identity), or --afao PATH (historical explicit input)
           --source-registry PATH --corpus-root PATH --output PATH
+          --reviewed-source PATH (private declaration for one two-volume catalog entry)
           AF_PROJECT_ROOT is required only for omitted relative authority/corpus defaults.
           No project root is discovered. Pack reads need only AF_FRONTIER_OUTPUT.
 

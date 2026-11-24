@@ -3,7 +3,7 @@
 module AfFrontier
   class SourceRegistry
     # Adapts the pinned v0.1 resolver's registry hooks for Frontier Pack's eager
-    # validation and segment bounds. The owner still decides every match.
+    # validation and segment bounds. The owner decides single-file matches.
     class Reader < AFSourceMD::SourceResolver
       # Return a Frontier Pack locator for the trimmed-title request, or nil
       # when neither a mapping nor a filename matches. Refusals use pack errors.
@@ -33,6 +33,25 @@ module AfFrontier
         nil
       rescue AFSourceMD::ConfigurationError => error
         raise ConfigurationError, error.message
+      end
+
+      # Return the two registry file names and their individual owner-resolved
+      # locators. Refuse ranges with a containing segment or ambiguous overlaps.
+      def reviewed_segments(request)
+        title, start_page, end_page = request.to_a
+        validate_segment_range(request)
+        segments = @segments.fetch(title, []).select do |segment|
+          segment.fetch(:start_page) <= end_page && segment.fetch(:end_page) >= start_page
+        end.sort_by { |segment| segment.fetch(:start_page) }
+        first, second = segments
+        unless segments.length == 2 && first.fetch(:end_page) < second.fetch(:start_page)
+          raise ResolutionError, "Reviewed source range for #{title.inspect} requires two unambiguous, nonoverlapping registry segments"
+        end
+
+        segments.to_h do |segment|
+          resolution = resolve(Request.new(title, segment.fetch(:start_page), segment.fetch(:end_page)))
+          [segment.fetch(:file), resolution.locator_hash]
+        end
       end
 
       private

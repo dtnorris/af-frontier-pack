@@ -18,8 +18,12 @@ module AfFrontier
     # Return the strict page slice rendered with one final newline. Missing
     # owner selection or unreadable boundaries raise the corresponding pack error.
     def emit(adventure_id)
-      owner = SourceMarkdownOwner.load!
       locator = locator(adventure_id)
+      if locator["strategy"] == ReviewedSource::STRATEGY
+        raise ResolutionError, "Cannot emit exact source for #{adventure_id}: reviewed across two volumes with no verified single-file excerpt"
+      end
+
+      owner = SourceMarkdownOwner.load!
       path = locator["path"]
       offset = Integer(locator.fetch("page_marker_offset", 0))
       start_page = integer_or_nil(locator["start_page"])
