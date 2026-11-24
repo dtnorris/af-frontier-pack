@@ -12,7 +12,7 @@ Deterministically package and expose AdventureFinder's canonical knowledge so a 
 - `af-source-md-data/source_registry.yml` (`adventurefinder-source-registry/v0.1`) by default, or an explicit compatible registry.
 - Private canonical Markdown corpus root.
 - Exact current AFAO authority, resolved deterministically and required for every build.
-- `af-xlsx-data-sources/PROJECT_STATE.yml` (`adventurefinder-project-state/v0.2`) for default `catalog_head` resolution.
+- `af-xlsx-files-data/PROJECT_STATE.yml` (`adventurefinder-project-state/v0.2`) for default `catalog_head` resolution.
 
 A project root is optional: fully explicit state/catalog, ontology, registry and
 corpus selections need none. Relative configured authority paths and the default

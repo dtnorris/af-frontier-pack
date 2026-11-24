@@ -1,11 +1,11 @@
 # AdventureFinder authorities consumed by af-frontier-pack.
 # Paths are resolved relative to AF_PROJECT_ROOT unless absolute.
 #
-# The catalog-head contract lives in af-xlsx-data-sources/PROJECT_STATE.yml.
+# The catalog-head contract lives in af-xlsx-files-data/PROJECT_STATE.yml.
 # Public AFAO identity is pinned in AnalysisOntologyResolver::PUBLIC_AFAO.
 # Selection records the Candidate method; it does not establish acceptance.
 state_manifests:
-  - af-xlsx-data-sources/PROJECT_STATE.yml
+  - af-xlsx-files-data/PROJECT_STATE.yml
 role: catalog_head
 schema_version: adventurefinder-project-state/v0.2
 

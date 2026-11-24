@@ -56,7 +56,7 @@ Resolution order in v0.1:
 1. `--amc PATH`
 2. `AF_FRONTIER_AMC`
 3. `--state PATH`, resolving role `catalog_head`
-4. `config/authority.yml` → `state_manifests` (currently `af-xlsx-data-sources/PROJECT_STATE.yml`, relative to an explicitly configured `AF_PROJECT_ROOT`)
+4. `config/authority.yml` → `state_manifests` (currently `af-xlsx-files-data/PROJECT_STATE.yml`, relative to an explicitly configured `AF_PROJECT_ROOT`)
 
 The production project-state contract is `adventurefinder-project-state/v0.2`. For a resolved `catalog_head`, `af-frontier` validates all three roles, including separate `matcher_authorized_baseline` and `production_dependency_floor` bindings, and verifies version/filename, byte size, and SHA-256 before building. Explicit `--amc` / `AF_FRONTIER_AMC` selects a frozen artifact; it does not establish library acceptance. If no authoritative head can be resolved, the command fails closed and asks for `--amc` or a project-state manifest.
 

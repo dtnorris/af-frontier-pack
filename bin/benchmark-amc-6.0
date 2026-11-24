@@ -44,7 +44,7 @@ BASELINE_ACCESSORS = {
 PACK_FILES = %w[manifest.json adventures.jsonl sources.jsonl].freeze
 REPOSITORIES = %w[
   af-frontier-pack
-  af-xlsx-data-sources
+  af-xlsx-files-data
   md-specification-files
   af-source-md-data
 ].freeze
@@ -75,8 +75,8 @@ if File.exist?(output_path) && !options[:force]
   abort "ERROR: benchmark report already exists: #{output_path} (use --force to replace it)"
 end
 
-amc_path = File.join(project_root, "af-xlsx-data-sources", EXPECTED_AMC.fetch("filename"))
-project_state_path = File.join(project_root, "af-xlsx-data-sources", "PROJECT_STATE.yml")
+amc_path = File.join(project_root, "af-xlsx-files-data", EXPECTED_AMC.fetch("filename"))
+project_state_path = File.join(project_root, "af-xlsx-files-data", "PROJECT_STATE.yml")
 afao_path = File.join(project_root, "md-specification-files", "AdventureFinder_Analysis_Ontology_v1.6.1.md")
 corpus_root = File.join(project_root, "af-source-md-data")
 source_registry_path = File.join(corpus_root, "source_registry.yml")
