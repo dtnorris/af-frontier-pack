@@ -4,6 +4,10 @@
 
 It **does not recommend adventures** and **owns no canonical truth**. It consumes explicit authoritative AdventureFinder artifacts and produces a compact, disposable frontier pack plus small CLI utilities for inspecting, filtering, source-resolving, and bundling context for a frontier model.
 
+Try the [public sample](https://github.com/dtnorris/adventure-finder/blob/1a4be9e12ad02144993f945de8cee4cfa28a67be/README.md#try-the-public-sample) to build a pack from three adventures, filter it to a shortlist, and read the selected adventure’s printed pages. All catalog and source inputs for that walkthrough are public.
+
+For your own library, follow [Build and use a private Frontier pack](https://github.com/dtnorris/adventure-finder/blob/1a4be9e12ad02144993f945de8cee4cfa28a67be/docs/private-frontier-pack.md). Bring the project-state manifest for your accepted catalog, its workbooks, the matching registry and Markdown sources, and an adventure ID. The guide selects the pinned public ontology.
+
 ## v0.1 product boundary
 
 ```text
